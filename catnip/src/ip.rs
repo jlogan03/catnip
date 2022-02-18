@@ -26,7 +26,7 @@ where
     [u8; 4 * N + 20]:,
 {
     /// The actual content of the header as bytes
-    pub header: &'a mut [u8; 4 * N + 20],
+    pub header: [u8; 4 * N + 20],
 }
 
 impl<'a, const N: usize> IPV4Header<'a, N>
@@ -35,11 +35,9 @@ where
 {
     /// Start from some sensible defaults
     #[allow(dead_code)]
-    pub fn new(content: &'a mut [u8; 4 * N + 20]) -> IPV4Header<N> {
+    pub fn new() -> IPV4Header<'a, N> {
         // Clear any existing values in the provided container
-        for i in 0..content.len() {
-            content[i] = 0u8;
-        }
+        let content: [u8; 4 * N + 20] = [0_u8; 4 * N + 20];
 
         // Start a blank header
         let mut header = IPV4Header { header: content };
@@ -56,21 +54,21 @@ where
     }
 
     /// Set version
-    pub fn version(self, v: Version) -> Self {
+    pub fn version(mut self, v: Version) -> Self {
         self.header[0] = self.header[0] & 0b0000_1111; // Clear existing
         self.header[0] = self.header[0] | v as u8; // Apply new
         self
     }
 
     /// Set header length (in 32-bit words)
-    pub fn header_length(self, v: u8) -> Self {
+    pub fn header_length(mut self, v: u8) -> Self {
         self.header[0] = self.header[0] & 0b1111_0000; // Clear existing
         self.header[0] = self.header[0] | v as u8; // Apply new
         self
     }
 
     /// Set DSCP (first 6 bits of second byte)
-    pub fn dscp(self, v: DSCP) -> Self {
+    pub fn dscp(mut self, v: DSCP) -> Self {
         self.header[1] = self.header[1] & 0b00000011; // Clear existing
         self.header[1] = self.header[1] | v as u8; // Apply new
         self
@@ -78,7 +76,7 @@ where
 
     /// Set total length of packet (header + body)
     #[allow(dead_code)]
-    pub fn total_length(self, body_length: u16) -> Self {
+    pub fn total_length(mut self, body_length: u16) -> Self {
         // Get total length
         let header_length = self.header[0] >> 4;
         let v = body_length + header_length as u16;
@@ -99,7 +97,7 @@ where
 
     /// Set identification
     #[allow(dead_code)]
-    pub fn identification(self, v: u16) -> Self {
+    pub fn identification(mut self, v: u16) -> Self {
         let bytes = v.to_be_bytes();
         self.header[4] = bytes[0];
         self.header[5] = bytes[1];
@@ -109,7 +107,7 @@ where
 
     /// Set fragmentation flags
     #[allow(dead_code)]
-    pub fn flags(self, v: Flags) -> Self {
+    pub fn flags(mut self, v: Flags) -> Self {
         match v {
             Flags::Clear => {
                 // Clear old if requested
@@ -126,7 +124,7 @@ where
 
     /// Set fragmentation offset
     #[allow(dead_code)]
-    pub fn frag_offs(self, v: u16) -> Self {
+    pub fn frag_offs(mut self, v: u16) -> Self {
         // Clip to 13 bits and split into bytes
         let v: u16 = v & 0b0001_1111_1111_1111;
         let bytes: [u8; 2] = v.to_be_bytes();
@@ -142,14 +140,14 @@ where
 
     /// Set Time-to-Live counter (number of bounces allowed)
     /// This counter decrements at each router and drops the packet at 0
-    pub fn ttl(self, v: u8) -> Self {
+    pub fn ttl(mut self, v: u8) -> Self {
         self.header[8] = v;
 
         self
     }
 
     /// Set protocol
-    pub fn protocol(self, v: Protocol) -> Self {
+    pub fn protocol(mut self, v: Protocol) -> Self {
         self.header[9] = v as u8;
 
         self
@@ -157,7 +155,7 @@ where
 
     /// Set checksum
     #[allow(dead_code)]
-    pub fn header_checksum(self, v: u16) -> Self {
+    pub fn header_checksum(mut self, v: u16) -> Self {
         let bytes = v.to_be_bytes();
         self.header[10] = bytes[0];
         self.header[11] = bytes[1];
@@ -167,7 +165,7 @@ where
 
     /// Set source IP address
     #[allow(dead_code)]
-    pub fn src_ipaddr(self, v: IPV4Addr) {
+    pub fn src_ipaddr(mut self, v: IPV4Addr) {
         for i in 0..4_usize {
             self.header[12 + i] = v.addr[i];
         }
@@ -175,7 +173,7 @@ where
 
     /// Set destination IP address
     #[allow(dead_code)]
-    pub fn dst_ipaddr(self, v: IPV4Addr) {
+    pub fn dst_ipaddr(mut self, v: IPV4Addr) {
         for i in 0..4_usize {
             self.header[16 + i] = v.addr[i];
         }

@@ -27,16 +27,18 @@ pub fn calc_checksum(data: &[u8]) -> u16 {
     let n: usize = data.len();
     let mut sum: i32 = 0;
     let mut i: usize = 0;
-    while i < n {
+    let mut count: usize = n;
+    while count > 1 {
         // Combine bytes to form u16; cast to u32; add to sum
         let bytes: [u8; 2] = [data[i], data[i + 1]];
         sum = sum + u16::from_be_bytes(bytes) as i32;
 
+        count = count - 1;
         i = i + 2;
     }
 
-    // If there is a byte left, it is paired with 0 (just add the byte)
-    if i == n {
+    // There may be a single byte left; it is paired with 0 (just add the byte)
+    if count > 0 {
         sum = sum + data[n - 1] as i32;
     };
 
@@ -65,11 +67,12 @@ mod tests {
             0x0a63_u16, 0xac10_u16, 0x0a0c_u16,
         ];
 
-        // Convert to bytes
-        let ipheader_example_8: &mut [u8; 20] = &mut [0_u8; 20];
-
+        // Convert words to bytes
+        let mut ipheader_example_8: [u8; 20] = [0_u8; 20];
         for (i, v) in ipheader_example_16.iter().enumerate() {
             let bytes: [u8; 2] = v.to_be_bytes();
+            ipheader_example_8[i] = bytes[0];
+            ipheader_example_8[i + 1] = bytes[1];
         }
 
         let header: IPV4Header<0_usize> = IPV4Header {
