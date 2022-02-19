@@ -1,6 +1,6 @@
 //! Internet Protocol message header construction
 
-use crate::Transportable;
+use crate::{Transportable, calc_checksum};
 
 /// IPV4 header per IETF-RFC-791
 ///
@@ -169,7 +169,8 @@ where
 
     /// Set checksum
     pub fn header_checksum(mut self, v: u16) -> Self {
-        let bytes = v.to_be_bytes();
+        let checksum = calc_checksum(&self.value);
+        let bytes = checksum.to_be_bytes();
         self.value[10] = bytes[0];
         self.value[11] = bytes[1];
 
