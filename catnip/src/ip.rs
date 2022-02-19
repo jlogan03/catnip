@@ -167,8 +167,12 @@ where
         self
     }
 
-    /// Set checksum
+    /// Calculate and set checksum
     pub fn header_checksum(mut self, v: u16) -> Self {
+        // Clear old
+        self.value[10] = 0;
+        self.value[11] = 0;
+        // Apply new
         let checksum = calc_checksum(&self.value);
         let bytes = checksum.to_be_bytes();
         self.value[10] = bytes[0];
