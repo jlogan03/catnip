@@ -23,9 +23,11 @@ impl UDPHeader {
 
         header
     }
+}
 
-    /// Split into to bytes in big-endian (network) format
-    pub fn to_be_bytes(&self) -> [u8; 8] {
+impl Transportable<8> for UDPHeader {
+    /// Pack into big-endian (network) byte array
+    fn to_be_bytes(&self) -> [u8; 8] {
         let mut header_bytes = [0_u8; 8];
         for (i, v) in self.value.iter().enumerate() {
             let bytes: [u8; 2] = v.to_be_bytes();
@@ -57,6 +59,25 @@ where
     [u8; 4 * N]:,
     [u8; 4 * M + 20]:,
 {
+    pub fn set_udp_checksum(mut self) -> Self {
+
+        self
+    }
+
+    pub fn set_ip_checksum(mut self) -> Self {
+
+        self
+    }
+
+    pub fn set_ip_length(mut self) -> Self {
+
+        self
+    }
+
+    pub fn set_udp_length(mut self) -> Self {
+
+        self
+    }
 }
 
 impl<'a, const N: usize, const M: usize> Transportable<{4 * M + 20 + 4 * N + 8}> for UDPFrame<'a, N, M> 
@@ -65,6 +86,7 @@ where
     [u8; 4 * M + 20]:,
     [u8; 4 * M + 20 + 4 * N + 8]:,
 {
+    /// Pack into big-endian (network) byte array
     fn to_be_bytes(&self) -> [u8; 4 * M + 20 + 4 * N + 8] {
         // Pack a byte array with IP header, UDP header, and UDP data
         let mut bytes = [0_u8; 4 * M + 20 + 4 * N + 8];

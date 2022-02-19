@@ -1,6 +1,7 @@
 # catnip
 
 A no-std, heapless, minimally-featured UDP/IP stack for bare-metal.
+Intended for high-speed data acquisition and controls on local networks.
 
 Makes extensive use of const generic expressions to provide flexibility in, 
 and guaranteed correctness of, lengths of headers and data segments without
