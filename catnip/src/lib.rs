@@ -4,6 +4,7 @@
 #![allow(dead_code)]
 #![deny(missing_docs)]
 #![feature(generic_const_exprs)]
+#![feature(type_ascription)]
 #![feature(test)]
 
 pub mod ip; // Internet layer

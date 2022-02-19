@@ -4,13 +4,13 @@ use crate::ip::IPV4Header;
 use crate::Transportable;
 
 /// UDP datagram header structure like
-/// 
+///
 /// value [0] source port [u16]
-/// 
+///
 /// value [1] destination port [u16]
-/// 
+///
 /// value [2] total length in bytes [u16], header + data
-/// 
+///
 /// value [3] checksum [u16]
 struct UDPHeader {
     value: [u16; 4],
@@ -40,9 +40,9 @@ impl Transportable<8> for UDPHeader {
 }
 
 /// IP message frame for UDP protocol
-/// 
+///
 /// N is size of UDP Data in 32-bit words
-/// 
+///
 /// M is size of IP Options in 32-bit words
 struct UDPFrame<'a, const N: usize, const M: usize>
 where
@@ -54,33 +54,8 @@ where
     udp_data: [u8; 4 * N],
 }
 
-impl<'a, const N: usize, const M: usize> UDPFrame<'_, N, M>
-where
-    [u8; 4 * N]:,
-    [u8; 4 * M + 20]:,
-{
-    pub fn set_udp_checksum(mut self) -> Self {
-
-        self
-    }
-
-    pub fn set_ip_checksum(mut self) -> Self {
-
-        self
-    }
-
-    pub fn set_ip_length(mut self) -> Self {
-
-        self
-    }
-
-    pub fn set_udp_length(mut self) -> Self {
-
-        self
-    }
-}
-
-impl<'a, const N: usize, const M: usize> Transportable<{4 * M + 20 + 4 * N + 8}> for UDPFrame<'a, N, M> 
+impl<'a, const N: usize, const M: usize> Transportable<{ 4 * M + 20 + 4 * N + 8 }>
+    for UDPFrame<'_, N, M>
 where
     [u8; 4 * N]:,
     [u8; 4 * M + 20]:,
@@ -105,5 +80,32 @@ where
         }
 
         bytes
+    }
+}
+
+impl<'a, const N: usize, const M: usize> UDPFrame<'a, N, M>
+where
+    [u8; 4 * N]:,
+    [u8; 4 * M + 20]:,
+    [u8; 4 * M + 20 + 4 * N + 8]:,
+{
+    pub fn set_ip_length(mut self) -> Self
+    {
+        let ip_length: u16 = self.to_be_bytes().len() as u16;
+        let header: IPV4Header<M> = self.ip_header.total_length::<M>(ip_length);
+
+        self
+    }
+
+    pub fn set_ip_checksum(mut self) -> Self {
+        self
+    }
+
+    pub fn set_udp_checksum(mut self) -> Self {
+        self
+    }
+
+    pub fn set_udp_length(mut self) -> Self {
+        self
     }
 }
