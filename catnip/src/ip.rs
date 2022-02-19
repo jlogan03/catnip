@@ -37,6 +37,7 @@ use crate::{Transportable, calc_checksum};
 /// value [16:19] Destination IP Address
 ///
 /// N is number of 32-bit words to reserve for the Options section
+#[derive(Clone, Copy, Debug)]
 pub struct IPV4Header<'a, const N: usize>
 where
     [u8; 4 * N + 20]:,
@@ -62,7 +63,7 @@ where
         // Apply some defaults
         header = header
             .version(Version::V4)
-            .header_length(5u8)
+            .header_length({5 + N} as u8)
             .dscp(DSCP::Standard)
             .ttl(100)
             .protocol(Protocol::UDP);
@@ -93,10 +94,6 @@ where
 
     /// Set total length of packet (header + body) in bytes
     pub fn total_length(mut self, v: u16) -> Self
-    where
-        [u8; 4 * N + 20]:,
-        [u16; 2 * N + 10]:,
-        [u32; N + 5]:,
     {
         // Split into two bytes
         let bytes: [u8; 2] = v.to_be_bytes();
@@ -168,7 +165,7 @@ where
     }
 
     /// Calculate and set checksum
-    pub fn header_checksum(mut self, v: u16) -> Self {
+    pub fn header_checksum(mut self) -> Self {
         // Clear old
         self.value[10] = 0;
         self.value[11] = 0;
@@ -249,6 +246,7 @@ where
 }
 
 /// IPV4 Address as bytes
+#[derive(Clone, Copy, Debug)]
 pub struct IPV4Addr {
     addr: [u8; 4],
 }
@@ -257,6 +255,7 @@ pub struct IPV4Addr {
 /// and their IP header values.
 /// There are many more protocols not listed here -
 /// see https://en.wikipedia.org/wiki/List_of_IP_protocol_numbers
+#[derive(Clone, Copy, Debug)]
 pub enum Protocol {
     /// Transmission Control Protocol
     TCP = 0x06,
@@ -265,6 +264,7 @@ pub enum Protocol {
 }
 
 /// IP version bit mask
+#[derive(Clone, Copy, Debug)]
 pub enum Version {
     /// IPV4
     V4 = 0b0100_0000,
@@ -274,6 +274,7 @@ pub enum Version {
 
 /// https://en.wikipedia.org/wiki/Differentiated_services
 /// Priority 2 is low-latency class
+#[derive(Clone, Copy, Debug)]
 pub enum DSCP {
     /// Default traffic
     Standard = 0,
@@ -312,6 +313,7 @@ pub enum DSCP {
 }
 
 /// Fragmentation flags
+#[derive(Clone, Copy, Debug)]
 pub enum Flags {
     /// Do not fragment
     DF = 1 << 6,

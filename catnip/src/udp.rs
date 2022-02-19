@@ -12,6 +12,7 @@ use crate::Transportable;
 /// value [2] total length in bytes [u16], header + data
 ///
 /// value [3] checksum [u16]
+#[derive(Clone, Copy, Debug)]
 struct UDPHeader {
     value: [u16; 4],
 }
@@ -44,6 +45,7 @@ impl Transportable<8> for UDPHeader {
 /// N is size of UDP Data in 32-bit words
 ///
 /// M is size of IP Options in 32-bit words
+#[derive(Clone, Copy, Debug)]
 struct UDPFrame<'a, const N: usize, const M: usize>
 where
     [u8; 4 * N]:,
@@ -58,15 +60,13 @@ impl<'a, const N: usize, const M: usize> UDPFrame<'a, N, M>
 where
     [u8; 4 * N]:,
     [u8; 4 * M + 20]:,
-    [u8; 4 * M + 20 + 4 * N + 8]:,
+    [u8; 4 * M + 20 + 4 * N + 8]:, // Required for Transportable trait
 {
     pub fn finalize(mut self) -> Self
     {
-        // Set IP frame length
+        // Set IP frame length and header checksum
         let ip_length: u16 = self.to_be_bytes().len() as u16;
-        self.ip_header = self.ip_header.total_length(ip_length);
-        
-        // Set IP header checksum
+        self.ip_header = self.ip_header.total_length(ip_length).header_checksum();
 
         // Set UDP data length
 
