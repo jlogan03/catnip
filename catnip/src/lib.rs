@@ -67,7 +67,7 @@ mod tests {
 
     use crate::{calc_checksum, ip::IPV4Header};
 
-    /// Following example from https://www.thegeekstuff.com/2012/05/ip-header-checksum/
+    /// Test cyclic redundancy check following example from https://www.thegeekstuff.com/2012/05/ip-header-checksum/
     #[test]
     fn test_calc_checksum() -> () {
         // Sample header with pre-calculated checksum: 4500 003c 1c46 4000 4006 b1e6 ac10 0a63 ac10 0a0c

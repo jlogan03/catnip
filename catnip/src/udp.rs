@@ -48,42 +48,39 @@ impl Transportable<8> for UDPHeader {
 #[derive(Clone, Copy, Debug)]
 struct UDPFrame<'a, const N: usize, const M: usize>
 where
-    [u8; 4 * N]:,
-    [u8; 4 * M + 20]:,
+    [u8; 4 * N + 20]:,
+    [u8; 4 * M]:,
 {
-    ip_header: IPV4Header<'a, M>,
+    ip_header: IPV4Header<'a, N>,
     udp_header: UDPHeader,
-    udp_data: [u8; 4 * N],
+    udp_data: [u8; 4 * M],
 }
 
 impl<'a, const N: usize, const M: usize> UDPFrame<'a, N, M>
 where
-    [u8; 4 * N]:,
-    [u8; 4 * M + 20]:,
-    [u8; 4 * M + 20 + 4 * N + 8]:, // Required for Transportable trait
+    [u8; 4 * M]:,
+    [u8; 4 * N + 20]:,
+    [u8; 4 * N + 20 + 4 * M + 8]:, // Required for Transportable trait
 {
-    pub fn finalize(mut self) -> Self
-    {
+    pub fn finalize(mut self) -> Self {
         // Set IP frame length and header checksum
         let ip_length: u16 = self.to_be_bytes().len() as u16;
-        self.ip_header = self.ip_header.total_length(ip_length).header_checksum();
+        // self.ip_header = self.ip_header.header_checksum();
 
         // Set UDP data length
 
         // Set UDP header checksum
 
-
         self
     }
-
 }
 
 impl<'a, const N: usize, const M: usize> Transportable<{ 4 * M + 20 + 4 * N + 8 }>
     for UDPFrame<'a, N, M>
 where
-    [u8; 4 * N]:,
-    [u8; 4 * M + 20]:,
-    [u8; 4 * M + 20 + 4 * N + 8]:,
+    [u8; 4 * M]:,
+    [u8; 4 * N + 20]:,
+    [u8; 4 * N + 20 + 4 * M + 8]:,
 {
     /// Pack into big-endian (network) byte array
     fn to_be_bytes(&self) -> [u8; 4 * M + 20 + 4 * N + 8] {
