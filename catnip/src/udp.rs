@@ -65,7 +65,7 @@ where
     pub fn finalize(mut self) -> Self {
         // Set IP frame length and header checksum
         let ip_length: u16 = self.to_be_bytes().len() as u16;
-        // self.ip_header = self.ip_header.header_checksum();
+        // self.ip_header = self.ip_header.total_length(ip_length);
 
         // Set UDP data length
 
@@ -75,7 +75,7 @@ where
     }
 }
 
-impl<'a, const N: usize, const M: usize> Transportable<{ 4 * M + 20 + 4 * N + 8 }>
+impl<'a, const N: usize, const M: usize> Transportable<{ 4 * N + 20 + 4 * M + 8 }>
     for UDPFrame<'a, N, M>
 where
     [u8; 4 * M]:,
@@ -83,9 +83,9 @@ where
     [u8; 4 * N + 20 + 4 * M + 8]:,
 {
     /// Pack into big-endian (network) byte array
-    fn to_be_bytes(&self) -> [u8; 4 * M + 20 + 4 * N + 8] {
+    fn to_be_bytes(&self) -> [u8; 4 * N + 20 + 4 * M + 8] {
         // Pack a byte array with IP header, UDP header, and UDP data
-        let mut bytes = [0_u8; 4 * M + 20 + 4 * N + 8];
+        let mut bytes = [0_u8; 4 * N + 20 + 4 * M + 8];
         let mut i = 0;
         for v in self.ip_header.to_be_bytes().iter() {
             bytes[i] = *v;
