@@ -66,15 +66,20 @@ where
     [u8; 4 * M + 20 + 4 * N + 8]:,
 {
     fn to_be_bytes(&self) -> [u8; 4 * M + 20 + 4 * N + 8] {
-        // Get size of each part in bytes
-        let ipheader_size: usize = 4 * M + 20;
-        let udpheader_size: usize = 8;
-        let udpdata_size: usize = 4 * N;
-        // Pack a byte array with those parts
+        // Pack a byte array with IP header, UDP header, and UDP data
         let mut bytes = [0_u8; 4 * M + 20 + 4 * N + 8];
         let mut i = 0;
         for v in self.ip_header.to_be_bytes().iter() {
             bytes[i] = *v;
+            i = i + 1;
+        }
+        for v in self.udp_header.to_be_bytes().iter() {
+            bytes[i] = *v;
+            i = i + 1;
+        }
+        for v in self.udp_data.iter() {
+            bytes[i] = *v;
+            i = i + 1;
         }
 
         bytes
