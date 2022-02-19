@@ -33,7 +33,7 @@ pub fn calc_checksum(data: &[u8]) -> u16 {
         let bytes: [u8; 2] = [data[i], data[i + 1]];
         sum = sum + u16::from_be_bytes(bytes) as i32;
 
-        count = count - 1;
+        count = count - 2;
         i = i + 2;
     }
 
@@ -53,30 +53,46 @@ pub fn calc_checksum(data: &[u8]) -> u16 {
     return checksum;
 }
 
+/// Fine to use std to test a no-std crate
+#[cfg(test)]
+#[macro_use]
+extern crate std;
+
 #[cfg(test)]
 mod tests {
 
-    use crate::ip::*;
+    use crate::{ip::IPV4Header, calc_checksum};
 
     /// Following example from https://www.thegeekstuff.com/2012/05/ip-header-checksum/
     #[test]
     fn test_calc_checksum() -> () {
         // Sample header with zero checksum: 4500 003c 1c46 4000 4006 b1e6 ac10 0a63 ac10 0a0c
-        let mut ipheader_example_16: &[u16; 10] = &[
+        let ipheader_example_16: &[u16; 10] = &[
             0x4500_u16, 0x003c_u16, 0x1c46_u16, 0x4000_u16, 0x4006_u16, 0xb1e6_u16, 0xac10_u16,
             0x0a63_u16, 0xac10_u16, 0x0a0c_u16,
         ];
 
+        let checksum_expected = ipheader_example_16[5];
+        let cyclic_checksum_expected: u16 = 0;  // If the calculated checksum is already in place, should sum to 0
+
         // Convert words to bytes
-        let mut ipheader_example_8: [u8; 20] = [0_u8; 20];
-        for (i, v) in ipheader_example_16.iter().enumerate() {
-            let bytes: [u8; 2] = v.to_be_bytes();
-            ipheader_example_8[i] = bytes[0];
-            ipheader_example_8[i + 1] = bytes[1];
+        let header: IPV4Header<0_usize> = IPV4Header::<0_usize>::from_16bit_words(ipheader_example_16);
+
+        for v in header.header.iter(){
+            println!("{:x}", v);
         }
 
-        let header: IPV4Header<0_usize> = IPV4Header {
-            header: ipheader_example_8,
-        };
+        // Make sure that the checksum over the header that already includes a checksum comes out correct
+        let cyclic_checksum = calc_checksum(&header.header);
+        assert_eq!(cyclic_checksum, cyclic_checksum_expected);
+        println!("Cyclic Checksum: {:x}", cyclic_checksum);
+
+        // Make sure that the checksum over the header with the existing checksum removed also comes out correct
+        let mut ipheader_example_16_no_checksum = ipheader_example_16.clone();
+        ipheader_example_16_no_checksum[5] = 0_u16; // Erase existing checksum
+        let header: IPV4Header<0_usize> = IPV4Header::<0_usize>::from_16bit_words(&ipheader_example_16_no_checksum);
+        let checksum = calc_checksum(&header.header);
+        assert_eq!(checksum, checksum_expected);
+        
     }
 }

@@ -32,6 +32,8 @@ where
 impl<'a, const N: usize> IPV4Header<'a, N>
 where
     [u8; 4 * N + 20]:,
+    [u16; 2 * N + 10]:,
+    [u32; N + 5]:,
 {
     /// Start from some sensible defaults
     #[allow(dead_code)]
@@ -165,18 +167,67 @@ where
 
     /// Set source IP address
     #[allow(dead_code)]
-    pub fn src_ipaddr(mut self, v: IPV4Addr) {
+    pub fn src_ipaddr(mut self, v: IPV4Addr) -> Self {
         for i in 0..4_usize {
             self.header[12 + i] = v.addr[i];
         }
+
+        self
     }
 
     /// Set destination IP address
     #[allow(dead_code)]
-    pub fn dst_ipaddr(mut self, v: IPV4Addr) {
+    pub fn dst_ipaddr(mut self, v: IPV4Addr) -> Self {
         for i in 0..4_usize {
             self.header[16 + i] = v.addr[i];
         }
+
+        self
+    }
+
+    /// Make from 16-bit words
+    #[allow(dead_code)]
+    pub fn from_16bit_words<'b, const M: usize>(header16: &[u16; 2 * M + 10]) -> IPV4Header<'b, M>
+    where
+        [u16; 2 * M + 10]:,
+        [u8; 4 * M + 20]:,
+    {
+        // Convert words to bytes
+        let mut header8: [u8; 4 * M + 20] = [0_u8; 4 * M + 20];
+        for (i, v) in header16.iter().enumerate() {
+            let bytes: [u8; 2] = v.to_be_bytes();
+            header8[2 * i] = bytes[0];
+            header8[2 * i + 1] = bytes[1];
+        }
+
+        let header: IPV4Header<M> = IPV4Header {
+            header: header8,
+        };
+
+        header
+    }
+
+    /// Make from 16-bit words
+    #[allow(dead_code)]
+    pub fn from_32bit_words<'b, const M: usize>(header32: &[u32; M + 5]) -> IPV4Header<'b, M>
+    where
+        [u32; M + 5]:,
+        [u8; 4 * M + 20]:,
+    {
+        // Convert words to bytes
+        let mut header8: [u8; 4 * M + 20] = [0_u8; 4 * M + 20];
+        for (i, v) in header32.iter().enumerate() {
+            let bytes: [u8; 4] = v.to_be_bytes();
+            for j in 0..4 {
+                header8[4 * i + j] = bytes[j];
+            }
+        }
+
+        let header: IPV4Header<M> = IPV4Header {
+            header: header8,
+        };
+
+        header
     }
 }
 
