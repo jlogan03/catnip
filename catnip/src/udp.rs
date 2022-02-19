@@ -60,29 +60,26 @@ where
     [u8; 4 * M + 20]:,
     [u8; 4 * M + 20 + 4 * N + 8]:,
 {
-    pub fn set_ip_length(mut self) -> Self
+    pub fn finalize(mut self) -> Self
     {
+        // Set IP frame length
         let ip_length: u16 = self.to_be_bytes().len() as u16;
         self.ip_header = self.ip_header.total_length(ip_length);
+        
+        // Set IP header checksum
+
+        // Set UDP data length
+
+        // Set UDP header checksum
+
 
         self
     }
 
-    pub fn set_ip_checksum(mut self) -> Self {
-        self
-    }
-
-    pub fn set_udp_checksum(mut self) -> Self {
-        self
-    }
-
-    pub fn set_udp_length(mut self) -> Self {
-        self
-    }
 }
 
 impl<'a, const N: usize, const M: usize> Transportable<{ 4 * M + 20 + 4 * N + 8 }>
-    for UDPFrame<'_, N, M>
+    for UDPFrame<'a, N, M>
 where
     [u8; 4 * N]:,
     [u8; 4 * M + 20]:,
