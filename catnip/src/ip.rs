@@ -98,10 +98,6 @@ where
         // Split into two bytes
         let bytes: [u8; 2] = v.to_be_bytes();
 
-        // Clear old
-        self.value[2] = 0u8;
-        self.value[3] = 0u8;
-
         // Apply new
         self.value[2] = bytes[0];
         self.value[3] = bytes[1];
