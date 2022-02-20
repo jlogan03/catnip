@@ -6,6 +6,7 @@
 #![feature(generic_const_exprs)]
 #![feature(test)]
 
+pub mod enet; // Link Layer
 pub mod ip; // Internet layer
 pub mod udp; // Transport layer
 

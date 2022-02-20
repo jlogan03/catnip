@@ -46,7 +46,7 @@ impl Transportable<8> for UDPHeader {
 ///
 /// M is size of IP Options in 32-bit words
 #[derive(Clone, Copy, Debug)]
-struct UDPFrame<'a, const N: usize, const M: usize>
+struct UDPPacket<'a, const N: usize, const M: usize>
 where
     [u8; 4 * N + 20]:,
     [u8; 4 * M]:,
@@ -56,7 +56,7 @@ where
     pub udp_data: [u8; 4 * M],
 }
 
-impl<'a, const N: usize, const M: usize> UDPFrame<'a, N, M>
+impl<'a, const N: usize, const M: usize> UDPPacket<'a, N, M>
 where
     [u8; 4 * M]:,
     [u8; 4 * N + 20]:,
@@ -104,7 +104,7 @@ where
 }
 
 impl<'a, const N: usize, const M: usize> Transportable<{ 4 * N + 20 + 4 * M + 8 }>
-    for UDPFrame<'a, N, M>
+    for UDPPacket<'a, N, M>
 where
     [u8; 4 * M]:,
     [u8; 4 * N + 20]:,
