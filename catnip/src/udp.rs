@@ -1,7 +1,7 @@
 //! User Datagram Protocol
 
 use crate::ip::IPV4Header;
-use crate::{Transportable, calc_checksum};
+use crate::{calc_ip_checksum, Transportable};
 
 /// UDP datagram header structure like
 ///
@@ -42,9 +42,9 @@ impl Transportable<8> for UDPHeader {
 
 /// IP message frame for UDP protocol
 ///
-/// N is size of UDP Data in 32-bit words
+/// N is size of IP Options in 32-bit words
 ///
-/// M is size of IP Options in 32-bit words
+/// M is size of UDP Data in 32-bit words
 #[derive(Clone, Copy, Debug)]
 struct UDPPacket<'a, const N: usize, const M: usize>
 where
@@ -63,7 +63,7 @@ where
     [u8; 4 * N + 20 + 4 * M + 8]:, // Required for Transportable trait
 {
     /// Set values that require the complete packet (length, checksums)
-    /// 
+    ///
     /// TODO: use IPV4Header's methods to set its values once the missing bounds error is fixed
     pub fn finalize(mut self) -> Self {
         // Set IP frame length
@@ -78,7 +78,7 @@ where
         self.ip_header.value[10] = 0;
         self.ip_header.value[11] = 0;
         // Apply new
-        let checksum = calc_checksum(&self.ip_header.value);
+        let checksum = calc_ip_checksum(&self.ip_header.value);
         let bytes: [u8; 2] = checksum.to_be_bytes();
         self.ip_header.value[10] = bytes[0];
         self.ip_header.value[11] = bytes[1];
@@ -86,18 +86,19 @@ where
         // Set UDP data length in bytes
         self.udp_header.value[2] = (self.udp_data.len() + 2 * self.udp_header.value.len()) as u16;
 
-        // Set UDP header checksum, summing up the parts of the "pseudoheader"
-        // See https://en.wikipedia.org/wiki/User_Datagram_Protocol#IPv4_pseudo_header
+        // Zero-out UDP checksum because it is redundant with ethernet checksum & prone to overflow
+        // // Set UDP header checksum, summing up the parts of the "pseudoheader"
+        // // See https://en.wikipedia.org/wiki/User_Datagram_Protocol#IPv4_pseudo_header
         // Clear old
         self.udp_header.value[3] = 0;
-        // Apply new
-        let mut udp_checksum: u16 = 0_u16;
-        udp_checksum = udp_checksum + calc_checksum(&self.ip_header.value[12..20]);  // src, dst ipaddrs
-        let protocol_bytes: [u8; 2] = (self.ip_header.value[9] as u16).to_be_bytes();
-        udp_checksum = udp_checksum + calc_checksum(&protocol_bytes);  // Protocol with zero-padding
-        udp_checksum = udp_checksum + calc_checksum(&self.udp_header.to_be_bytes());  // UDP header
-        udp_checksum = udp_checksum + calc_checksum(&self.udp_data);  // The actual data
-        self.udp_header.value[3] = udp_checksum;
+        // // Apply new
+        // let mut udp_checksum: u16 = 0_u16;
+        // udp_checksum = udp_checksum + calc_checksum(&self.ip_header.value[12..20]); // src, dst ipaddrs
+        // let protocol_bytes: [u8; 2] = (self.ip_header.value[9] as u16).to_be_bytes();
+        // udp_checksum = udp_checksum + calc_checksum(&protocol_bytes); // Protocol with zero-padding
+        // udp_checksum = udp_checksum + calc_checksum(&self.udp_header.to_be_bytes()); // UDP header
+        // udp_checksum = udp_checksum + calc_checksum(&self.udp_data); // The actual data
+        // self.udp_header.value[3] = udp_checksum;
 
         self
     }
@@ -130,4 +131,36 @@ where
 
         bytes
     }
+}
+
+#[cfg(test)]
+mod test {
+    // use super::{UDPHeader, UDPPacket};
+
+    // #[test]
+    // fn test_udp_header() {
+    //     // Parse and replicate example header from https://www.khanacademy.org/computing/computers-and-internet/xcae6f4a7ff015e7d:the-internet/xcae6f4a7ff015e7d:transporting-packets/a/user-datagram-protocol-udp
+    //     let example_header: [u16; 4] = [
+    //         0b00010101_00001001,
+    //         0b0001010_100001001,
+    //         0b00000000_00000100,
+    //         0b10110100_11010000,
+    //     ];
+    //     let example_data: [u8; 4] = [0b01001000, 0b01101111, 0b01101100, 0b01100001];
+    //     // let mut example_u16: [u16; 4] = [0_u16; 4];
+    //     // for i in 0..4 {
+    //     //     let bytes: [u8; 2] = [example_bytes[2*i], example_bytes[2*i + 1]];
+    //     //     example_u16[i] = u16::from_be_bytes(bytes);
+    //     // }
+    //     let example_header: UDPHeader = UDPHeader {
+    //         value: example_header,
+    //     };
+    //     let example_packet: UDPPacket<0, 1> = UDPPacket {
+    //         ip_header: crate::ip::IPV4Header::new(),
+    //         udp_header: example_header,
+    //         udp_data: example_data,
+    //     };
+
+
+    // }
 }

@@ -1,6 +1,6 @@
 //! Internet Protocol message header construction
 
-use crate::{Transportable, calc_checksum};
+use crate::{Transportable, calc_ip_checksum};
 
 /// IPV4 header per IETF-RFC-791
 ///
@@ -166,7 +166,7 @@ where
         self.value[10] = 0;
         self.value[11] = 0;
         // Apply new
-        let checksum = calc_checksum(&self.value);
+        let checksum = calc_ip_checksum(&self.value);
         let bytes = checksum.to_be_bytes();
         self.value[10] = bytes[0];
         self.value[11] = bytes[1];
