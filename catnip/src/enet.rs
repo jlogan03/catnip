@@ -77,12 +77,12 @@ impl<T, const P: usize> Transportable<{P + 14}> for EthernetFrame<T, P> where T:
     fn to_be_bytes(&self) -> [u8; P + 14] {
         let mut bytes: [u8; P + 14] = [0_u8; P + 14];
         let mut i = 0;
-        for v in self.header.value.iter() {
-            bytes[i] = *v;
+        for v in self.header.value {
+            bytes[i] = v;
             i = i + 1;
         };
-        for v in self.data.to_be_bytes().iter() {
-            bytes[i] = *v;
+        for v in self.data.to_be_bytes() {
+            bytes[i] = v;
             i = i + 1;
         };
 
@@ -94,6 +94,27 @@ impl<T, const P: usize> Transportable<{P + 14}> for EthernetFrame<T, P> where T:
 #[derive(Clone, Copy, Debug)]
 pub struct EthernetPacket<T, const P: usize> where T: Transportable<P> {
     frame: EthernetFrame<T, P>
+}
+
+impl<T, const P: usize> Transportable<{P + 14 + 20}> for EthernetPacket<T, P> where T: Transportable<P> {
+    fn to_be_bytes(&self) -> [u8; P + 14 + 20] {
+        let mut bytes = [0_u8; P + 14 + 20];
+        let mut i = 0;
+        for v in PREAMBLE {  // Clock-sync preamble and start-frame delimiter
+            bytes[i] = v;
+            i = i + 1;
+        }
+        for v in self.frame.to_be_bytes() {  // Data
+            bytes[i] = v;
+            i = i + 1;
+        }
+        for v in IPG {  // Inter-packet gap
+            bytes[i] = v;
+            i = i + 1;
+        }
+
+        bytes
+    }
 }
 
 /// EtherType tag values (incomplete list - there are many more not implemented here)

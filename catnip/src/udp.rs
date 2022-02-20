@@ -115,16 +115,16 @@ where
         // Pack a byte array with IP header, UDP header, and UDP data
         let mut bytes = [0_u8; 4 * N + 20 + 4 * M + 8];
         let mut i = 0;
-        for v in self.ip_header.to_be_bytes().iter() {
-            bytes[i] = *v;
+        for v in self.ip_header.to_be_bytes() {
+            bytes[i] = v;
             i = i + 1;
         }
-        for v in self.udp_header.to_be_bytes().iter() {
-            bytes[i] = *v;
+        for v in self.udp_header.to_be_bytes() {
+            bytes[i] = v;
             i = i + 1;
         }
-        for v in self.udp_data.iter() {
-            bytes[i] = *v;
+        for v in self.udp_data {
+            bytes[i] = v;
             i = i + 1;
         }
 
