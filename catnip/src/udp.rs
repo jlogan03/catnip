@@ -83,7 +83,7 @@ where
         self.ip_header.value[10] = bytes[0];
         self.ip_header.value[11] = bytes[1];
 
-        // Set UDP data length
+        // Set UDP data length in bytes
         self.udp_header.value[2] = (self.udp_data.len() + 2 * self.udp_header.value.len()) as u16;
 
         // Set UDP header checksum, summing up the parts of the "pseudoheader"
