@@ -13,12 +13,49 @@ const IPG: [u8; 12] = [0; 12];
 /// 
 /// value [0:5] src macaddr
 /// 
-/// value [6:11] dst macaddr
+/// value [6:11] dst macaddr  ([0xFF_u8; 6] when payload is IP packet)
 /// 
 /// value [12:13] ethertype
 #[derive(Clone, Copy, Debug)]
 struct EthernetHeader {
     pub value: [u8; 14]
+}
+
+impl EthernetHeader {
+    pub fn new() -> EthernetHeader {
+        // Make a blank header
+        let mut header: EthernetHeader = EthernetHeader { value: [0_u8; 14] };
+        // Set some sensible defaults
+        let dst_macaddr: [u8; 6] = [0xFF_u8; 6];  // "Broadcast" address for IP packets
+        let ethertype: EtherType = EtherType::IPV4;
+        header = header.dst_macaddr(&dst_macaddr).ethertype(ethertype);
+
+        header
+    }
+
+    pub fn src_macaddr(mut self, v: &[u8; 6]) -> Self {
+        for i in 0..6 {
+            self.value[i] = v[i];
+        };
+
+        self
+    }
+
+    pub fn dst_macaddr(mut self, v: &[u8; 6]) -> Self {
+        for i in 0..6 {
+            self.value[i + 5] = v[i];
+        };
+
+        self
+    }
+
+    pub fn ethertype(mut self, v: EtherType) -> Self {
+        let bytes: [u8; 2] = (v as u16).to_be_bytes();
+        self.value[12] = bytes[0];
+        self.value[13] = bytes[1];
+    
+        self
+    }
 }
 
 impl Transportable<14> for EthernetHeader {
