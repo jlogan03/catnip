@@ -110,6 +110,18 @@ where
     pub data: T,
 }
 
+impl<T, const P: usize> EthernetFrame<T, P> where T: Transportable<P> {
+    /// Generate new, complete frame from components
+    pub fn new(header: EthernetHeader, data: T) -> Self {
+        let enetframe: EthernetFrame<T, P> = EthernetFrame {
+            header: header,
+            data: data
+        };
+
+        enetframe
+    }
+}
+
 impl<T, const P: usize> Transportable<{ P + 14 }> for EthernetFrame<T, P>
 where
     T: Transportable<P>,

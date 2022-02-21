@@ -63,12 +63,46 @@ where
     pub udp_data: Data<M>,
 }
 
+impl<'a, const N: usize, const M: usize> Transportable<{ 4 * N + 20 + 4 * M + 8 }>
+    for UDPPacket<'a, N, M>
+where
+    [u8; 4 * M]:,
+    [u8; 4 * N + 20]:,
+    [u8; 4 * N + 20 + 4 * M + 8]:,
+{
+
+    /// Pack into big-endian (network) byte array
+    fn to_be_bytes(&self) -> [u8; 4 * N + 20 + 4 * M + 8] {
+        // Pack a byte array with IP header, UDP header, and UDP data
+        let mut bytes = [0_u8; 4 * N + 20 + 4 * M + 8];
+        let mut i = 0;
+        for v in self.ip_header.to_be_bytes() {
+            bytes[i] = v;
+            i = i + 1;
+        }
+        for v in self.udp_header.to_be_bytes() {
+            bytes[i] = v;
+            i = i + 1;
+        }
+        for v in self.udp_data.value {
+            bytes[i] = v;
+            i = i + 1;
+        }
+
+        bytes
+    }
+}
+
 impl<'a, const N: usize, const M: usize> UDPPacket<'a, N, M>
 where
     [u8; 4 * M]:,
     [u8; 4 * N + 20]:,
     [u8; 4 * N + 20 + 4 * M + 8]:, // Required for Transportable trait
+    // UDPPacket<'a, N, M>: Transportable<{ 4 * N + 20 + 4 * M + 8 }>,
 {
+    /// Length of byte representation
+    pub const LENGTH: usize = 4 * N + 20 + 4 * M + 8;
+
     /// Build a UDP packet and populate the components that depend on the combined data
     ///
     /// N is size of IP Options in 32-bit words
@@ -78,7 +112,7 @@ where
         ip_header: IPV4Header<'a, N>,
         udp_header: UDPHeader,
         udp_data: Data<M>,
-    ) -> UDPPacket<'a, N, M> {
+    ) -> UDPPacket<'_, N, M> {
         let mut udppacket: UDPPacket<'a, N, M> = UDPPacket::<N, M> {
             ip_header: ip_header,
             udp_header: udp_header,
@@ -108,34 +142,6 @@ where
     }
 }
 
-impl<'a, const N: usize, const M: usize> Transportable<{ 4 * N + 20 + 4 * M + 8 }>
-    for UDPPacket<'a, N, M>
-where
-    [u8; 4 * M]:,
-    [u8; 4 * N + 20]:,
-    [u8; 4 * N + 20 + 4 * M + 8]:,
-{
-    /// Pack into big-endian (network) byte array
-    fn to_be_bytes(&self) -> [u8; 4 * N + 20 + 4 * M + 8] {
-        // Pack a byte array with IP header, UDP header, and UDP data
-        let mut bytes = [0_u8; 4 * N + 20 + 4 * M + 8];
-        let mut i = 0;
-        for v in self.ip_header.to_be_bytes() {
-            bytes[i] = v;
-            i = i + 1;
-        }
-        for v in self.udp_header.to_be_bytes() {
-            bytes[i] = v;
-            i = i + 1;
-        }
-        for v in self.udp_data.value {
-            bytes[i] = v;
-            i = i + 1;
-        }
-
-        bytes
-    }
-}
 
 #[cfg(test)]
 mod test {

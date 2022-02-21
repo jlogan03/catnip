@@ -15,12 +15,12 @@ pub mod udp; // Transport layer
 pub trait Transportable<const N: usize> {
     /// Length of byte representation
     const LENGTH: usize = N;
-    /// Convert to big-endian (network) byte array
-    fn to_be_bytes(&self) -> [u8; N];
-    /// Get length of instance's byte representation
+    /// Get length of byte representation
     fn len(&self) -> usize {
         Self::LENGTH
     }
+    /// Convert to big-endian (network) byte array
+    fn to_be_bytes(&self) -> [u8; N];
 }
 
 /// MAC Addresses & methods for converting between common formats
