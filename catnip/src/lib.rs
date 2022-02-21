@@ -25,10 +25,18 @@ pub struct MACAddr {
     pub value: [u8; 6],
 }
 
-// /// Ethernet data must be a multiple of 4 bytes (32-bit words)
-// pub struct Data<const Q: usize> {
+/// Ethernet data must be a multiple of 4 bytes (32-bit words)
+#[derive(Clone, Copy, Debug)]
+pub struct Data<const Q: usize> where [u8; 4 * Q]:, {
+    /// Byte array of data
+    pub value: [u8; 4 * Q]
+}
 
-// }
+impl<const Q: usize> Transportable<{4 * Q}> for Data<Q> where [u8; 4 * Q]:, {
+    fn to_be_bytes(&self) -> [u8; 4 * Q] {
+        self.value
+    }
+}
 
 /// Calculate IP checksum per IETF-RFC-768
 /// following implementation guide in IETF-RFC-1071 section 4.1

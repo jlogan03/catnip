@@ -1,7 +1,7 @@
 //! User Datagram Protocol
 
 use crate::ip::IPV4Header;
-use crate::{calc_ip_checksum, Transportable};
+use crate::{calc_ip_checksum, Transportable, Data};
 
 /// UDP datagram header structure like
 ///
@@ -53,7 +53,7 @@ where
 {
     pub ip_header: IPV4Header<'a, N>,
     pub udp_header: UDPHeader,
-    pub udp_data: [u8; 4 * M],
+    pub udp_data: Data<M>,
 }
 
 impl<'a, const N: usize, const M: usize> UDPPacket<'a, N, M>
@@ -84,7 +84,7 @@ where
         self.ip_header.value[11] = bytes[1];
 
         // Set UDP data length in bytes
-        self.udp_header.value[2] = (self.udp_data.len() + 2 * self.udp_header.value.len()) as u16;
+        self.udp_header.value[2] = (self.udp_data.value.len() + 2 * self.udp_header.value.len()) as u16;
 
         // Zero-out UDP checksum because it is redundant with ethernet checksum & prone to overflow
         // // Set UDP header checksum, summing up the parts of the "pseudoheader"
@@ -124,7 +124,7 @@ where
             bytes[i] = v;
             i = i + 1;
         }
-        for v in self.udp_data {
+        for v in self.udp_data.value {
             bytes[i] = v;
             i = i + 1;
         }
