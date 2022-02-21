@@ -100,18 +100,20 @@ impl Transportable<14> for EthernetHeader {
 /// 
 /// P is length of data's byte representation
 #[derive(Clone, Copy, Debug)]
-pub struct EthernetFrame<const P: usize>
+pub struct EthernetFrame<T, const P: usize>
+where
+    T: Transportable<P>,
 {
     /// Ethernet frame header
     pub header: EthernetHeader,
     /// Ethernet payload (likely some kind of IP packet)
-    pub data: [u8; P],
+    pub data: T,
 }
 
-impl<const P: usize> EthernetFrame<P> {
+impl<T, const P: usize> EthernetFrame<T, P> where T: Transportable<P> {
     /// Generate new, complete frame from components
-    pub fn new(header: EthernetHeader, data: [u8; P]) -> Self {
-        let enetframe: EthernetFrame<P> = EthernetFrame {
+    pub fn new(header: EthernetHeader, data: T) -> Self {
+        let enetframe: EthernetFrame<T, P> = EthernetFrame {
             header: header,
             data: data
         };
@@ -120,7 +122,9 @@ impl<const P: usize> EthernetFrame<P> {
     }
 }
 
-impl<const P: usize> Transportable<{ P + 14 }> for EthernetFrame<P>
+impl<T, const P: usize> Transportable<{ P + 14 }> for EthernetFrame<T, P>
+where
+    T: Transportable<P>,
 {
     /// Pack into big-endian (network) byte array
     fn to_be_bytes(&self) -> [u8; P + 14] {
@@ -130,7 +134,7 @@ impl<const P: usize> Transportable<{ P + 14 }> for EthernetFrame<P>
             bytes[i] = v;
             i = i + 1;
         }
-        for v in self.data {
+        for v in self.data.to_be_bytes() {
             bytes[i] = v;
             i = i + 1;
         }
@@ -141,12 +145,16 @@ impl<const P: usize> Transportable<{ P + 14 }> for EthernetFrame<P>
 
 /// Ethernet II packet (including preamble, start-frame delimiter, and interpacket gap)
 #[derive(Clone, Copy, Debug)]
-pub struct EthernetPacket<const P: usize>
+pub struct EthernetPacket<T, const P: usize>
+where
+    T: Transportable<P>,
 {
-    frame: EthernetFrame<P>,
+    frame: EthernetFrame<T, P>,
 }
 
-impl<const P: usize> Transportable<{ P + 14 + 24 }> for EthernetPacket<P>
+impl<T, const P: usize> Transportable<{ P + 14 + 24 }> for EthernetPacket<T, P>
+where
+    T: Transportable<P>,
 {
     fn to_be_bytes(&self) -> [u8; P + 14 + 24] {
         // Initialize output

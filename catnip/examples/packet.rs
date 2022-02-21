@@ -51,5 +51,5 @@ fn main() -> () {
     let enetheader: EthernetHeader = EthernetHeader::new(src_macaddr, dst_macaddr, EtherType::IPV4);
 
     // Build Ethernet frame
-    let enetframe = EthernetFrame::new(enetheader, udppacket.to_be_bytes());
+    // let enetframe = EthernetFrame::new(enetheader, udppacket);
 }
