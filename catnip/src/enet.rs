@@ -1,7 +1,7 @@
 //! Ethernet II protocol per IEEE 802.3
 //! Diagram at https://en.wikipedia.org/wiki/Ethernet_frame#Ethernet_II
 
-use crate::Transportable;
+use crate::{MACAddr, Transportable};
 
 /// Combined preamble and start-frame delimiter because they are never changed or separated
 const PREAMBLE: [u8; 8] = [
@@ -26,23 +26,38 @@ const IPG: [u8; 12] = [0; 12];
 ///
 /// value [12:13] ethertype
 #[derive(Clone, Copy, Debug)]
-struct EthernetHeader {
+pub struct EthernetHeader {
+    /// The header structure in bytes
     pub value: [u8; 14],
 }
 
 impl EthernetHeader {
-    pub fn new() -> EthernetHeader {
-        // Make a blank header
-        let mut header: EthernetHeader = EthernetHeader { value: [0_u8; 14] };
-        // Set some sensible defaults
-        let dst_macaddr: [u8; 6] = [0xFF_u8; 6]; // "Broadcast" address for IP packets
-        let ethertype: EtherType = EtherType::IPV4;
-        header = header.dst_macaddr(&dst_macaddr).ethertype(ethertype);
+    /// Make a complete ethernet frame header with the specified values
+    ///
+    /// If no destination MAC address is given, defaults to Broadcast value (always used when payload is IP packet)
+    pub fn new(
+        src_macaddr: MACAddr,
+        dst_macaddr: Option<MACAddr>,
+        ethertype: EtherType,
+    ) -> EthernetHeader {
+        let dst_macaddr = match dst_macaddr {
+            Some(x) => x,
+            None => MACAddr {
+                value: [0xFF_u8; 6],
+            },
+        };
+
+        let header = EthernetHeader { value: [0_u8; 14] }
+            .src_macaddr(&src_macaddr.value)
+            .dst_macaddr(&dst_macaddr.value)
+            .ethertype(ethertype)
+            .finalize();
 
         header
     }
 
-    pub fn src_macaddr(mut self, v: &[u8; 6]) -> Self {
+    /// Set source mac address
+    pub fn src_macaddr(&mut self, v: &[u8; 6]) -> &mut Self {
         for i in 0..6 {
             self.value[i] = v[i];
         }
@@ -50,7 +65,8 @@ impl EthernetHeader {
         self
     }
 
-    pub fn dst_macaddr(mut self, v: &[u8; 6]) -> Self {
+    /// Set destination mac address
+    pub fn dst_macaddr(&mut self, v: &[u8; 6]) -> &mut Self {
         for i in 0..6 {
             self.value[i + 5] = v[i];
         }
@@ -58,12 +74,18 @@ impl EthernetHeader {
         self
     }
 
-    pub fn ethertype(mut self, v: EtherType) -> Self {
+    /// Set ethernet service type
+    pub fn ethertype(&mut self, v: EtherType) -> &mut Self {
         let bytes: [u8; 2] = (v as u16).to_be_bytes();
         self.value[12] = bytes[0];
         self.value[13] = bytes[1];
 
         self
+    }
+
+    /// Dereference to prevent droppage
+    pub fn finalize(&mut self) -> Self {
+        *self
     }
 }
 
@@ -75,12 +97,16 @@ impl Transportable<14> for EthernetHeader {
 }
 
 /// Ethernet II frame (variable parts of a packet)
+/// 
+/// P is length of data's byte representation
 #[derive(Clone, Copy, Debug)]
-struct EthernetFrame<T, const P: usize>
+pub struct EthernetFrame<T, const P: usize>
 where
     T: Transportable<P>,
 {
+    /// Ethernet frame header
     header: EthernetHeader,
+    /// Ethernet payload (likely some kind of IP packet)
     data: T,
 }
 

@@ -13,14 +13,16 @@ use crate::{calc_ip_checksum, Transportable, Data};
 ///
 /// value [3] checksum [u16]
 #[derive(Clone, Copy, Debug)]
-struct UDPHeader {
+pub struct UDPHeader {
     value: [u16; 4],
 }
 
 impl UDPHeader {
-    pub fn new() -> UDPHeader {
-        // Start a blank header
-        let header: UDPHeader = UDPHeader { value: [0_u16; 4] };
+    /// Start a header with src and dst ports populated
+    /// 
+    /// Length and checksum will be populated later
+    pub fn new(src_port: u16, dst_port: u16) -> UDPHeader {
+        let header: UDPHeader = UDPHeader { value: [src_port, dst_port, 0, 0] };
 
         header
     }
@@ -46,13 +48,16 @@ impl Transportable<8> for UDPHeader {
 ///
 /// M is size of UDP Data in 32-bit words
 #[derive(Clone, Copy, Debug)]
-struct UDPPacket<'a, const N: usize, const M: usize>
+pub struct UDPPacket<'a, const N: usize, const M: usize>
 where
     [u8; 4 * N + 20]:,
     [u8; 4 * M]:,
 {
+    /// IPV4 packet header
     pub ip_header: IPV4Header<'a, N>,
+    /// UDP datagram header
     pub udp_header: UDPHeader,
+    /// Data to transmit; bytes in some multiple of 32 bit words
     pub udp_data: Data<M>,
 }
 
