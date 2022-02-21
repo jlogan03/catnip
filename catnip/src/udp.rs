@@ -1,7 +1,7 @@
 //! User Datagram Protocol
 
 use crate::ip::IPV4Header;
-use crate::{calc_ip_checksum, Transportable, Data};
+use crate::{calc_ip_checksum, Data, Transportable};
 
 /// UDP datagram header structure like
 ///
@@ -19,10 +19,12 @@ pub struct UDPHeader {
 
 impl UDPHeader {
     /// Start a header with src and dst ports populated
-    /// 
+    ///
     /// Length and checksum will be populated later
     pub fn new(src_port: u16, dst_port: u16) -> UDPHeader {
-        let header: UDPHeader = UDPHeader { value: [src_port, dst_port, 0, 0] };
+        let header: UDPHeader = UDPHeader {
+            value: [src_port, dst_port, 0, 0],
+        };
 
         header
     }
@@ -68,30 +70,36 @@ where
     [u8; 4 * N + 20 + 4 * M + 8]:, // Required for Transportable trait
 {
     /// Build a UDP packet and populate the components that depend on the combined data
-    /// 
+    ///
     /// N is size of IP Options in 32-bit words
     ///
-    /// M is size of UDP Data in 32-bit words 
-    pub fn new(ip_header: IPV4Header<'a, N>, udp_header: UDPHeader, udp_data: Data<M>) -> UDPPacket<'a, N, M> {
-
-        let mut udppacket: UDPPacket<'a, N, M> = UDPPacket::<N, M> { ip_header: ip_header, udp_header:udp_header, udp_data:udp_data };
+    /// M is size of UDP Data in 32-bit words
+    pub fn new(
+        ip_header: IPV4Header<'a, N>,
+        udp_header: UDPHeader,
+        udp_data: Data<M>,
+    ) -> UDPPacket<'a, N, M> {
+        let mut udppacket: UDPPacket<'a, N, M> = UDPPacket::<N, M> {
+            ip_header: ip_header,
+            udp_header: udp_header,
+            udp_data: udp_data,
+        };
 
         // Set IP frame length
-        let ip_length: u16 = udppacket.to_be_bytes().len() as u16;
-        // udppacket.ip_header = udppacket.ip_header.total_length(ip_length);
-        let bytes: [u8; 2] = ip_length.to_be_bytes();
-        udppacket.ip_header.value[2] = bytes[0];
-        udppacket.ip_header.value[3] = bytes[1];
+        let ip_length: u16 = udppacket.len() as u16;
+        let ip_length_bytes: [u8; 2] = ip_length.to_be_bytes();
+        udppacket.ip_header.value[2] = ip_length_bytes[0];
+        udppacket.ip_header.value[3] = ip_length_bytes[1];
 
         // Set IP header checksum
-        // Apply new
-        let checksum = calc_ip_checksum(&udppacket.ip_header.value);
-        let bytes: [u8; 2] = checksum.to_be_bytes();
-        udppacket.ip_header.value[10] = bytes[0];
-        udppacket.ip_header.value[11] = bytes[1];
+        let checksum: u16 = calc_ip_checksum(&udppacket.ip_header.value);
+        let checksum_bytes: [u8; 2] = checksum.to_be_bytes();
+        udppacket.ip_header.value[10] = checksum_bytes[0];
+        udppacket.ip_header.value[11] = checksum_bytes[1];
 
-        // Set UDP data length in bytes
-        udppacket.udp_header.value[2] = (udppacket.udp_data.value.len() + 2 * udppacket.udp_header.value.len()) as u16;
+        // Set UDP packet length in bytes
+        udppacket.udp_header.value[2] =
+            (udp_data.len() + udp_header.len()) as u16;
 
         // Zero-out UDP checksum because it is redundant with ethernet checksum & prone to overflow
         udppacket.udp_header.value[3] = 0;

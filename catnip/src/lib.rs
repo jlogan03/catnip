@@ -13,8 +13,14 @@ pub mod udp; // Transport layer
 /// All protocols' headers, data, and frames must be able to convert to byte array
 /// in order to be consumed by EMAC/PHY drivers for transmission
 pub trait Transportable<const N: usize> {
+    /// Length of byte representation
+    const LENGTH: usize = N;
     /// Convert to big-endian (network) byte array
     fn to_be_bytes(&self) -> [u8; N];
+    /// Get length of instance's byte representation
+    fn len(&self) -> usize {
+        Self::LENGTH
+    }
 }
 
 /// MAC Addresses & methods for converting between common formats
