@@ -45,8 +45,7 @@ pub fn main() -> () {
         ip_header: ipheader,
         udp_header: udpheader,
         udp_data: data,
-    }
-    .finalize();  // Populate packet length fields for both IP and UDP headers
+    };  // Populates packet length fields for both IP and UDP headers
 
     // Build Ethernet frame header
     let enetheader: EthernetHeader = EthernetHeader::new(src_macaddr, dst_macaddr, EtherType::IPV4);

@@ -67,45 +67,36 @@ where
     [u8; 4 * N + 20]:,
     [u8; 4 * N + 20 + 4 * M + 8]:, // Required for Transportable trait
 {
-    /// Set values that require the complete packet (length, checksums)
+    /// Build a UDP packet and populate the components that depend on the combined data
+    /// 
+    /// N is size of IP Options in 32-bit words
     ///
-    /// TODO: use IPV4Header's methods to set its values once the missing bounds error is fixed
-    pub fn finalize(mut self) -> Self {
+    /// M is size of UDP Data in 32-bit words 
+    pub fn new(ip_header: IPV4Header<'a, N>, udp_header: UDPHeader, udp_data: Data<M>) -> UDPPacket<'a, N, M> {
+
+        let mut udppacket: UDPPacket<'a, N, M> = UDPPacket::<N, M> { ip_header: ip_header, udp_header:udp_header, udp_data:udp_data };
+
         // Set IP frame length
-        let ip_length: u16 = self.to_be_bytes().len() as u16;
-        // self.ip_header = self.ip_header.total_length(ip_length);
+        let ip_length: u16 = udppacket.to_be_bytes().len() as u16;
+        // udppacket.ip_header = udppacket.ip_header.total_length(ip_length);
         let bytes: [u8; 2] = ip_length.to_be_bytes();
-        self.ip_header.value[2] = bytes[0];
-        self.ip_header.value[3] = bytes[1];
+        udppacket.ip_header.value[2] = bytes[0];
+        udppacket.ip_header.value[3] = bytes[1];
 
         // Set IP header checksum
-        // Clear old
-        self.ip_header.value[10] = 0;
-        self.ip_header.value[11] = 0;
         // Apply new
-        let checksum = calc_ip_checksum(&self.ip_header.value);
+        let checksum = calc_ip_checksum(&udppacket.ip_header.value);
         let bytes: [u8; 2] = checksum.to_be_bytes();
-        self.ip_header.value[10] = bytes[0];
-        self.ip_header.value[11] = bytes[1];
+        udppacket.ip_header.value[10] = bytes[0];
+        udppacket.ip_header.value[11] = bytes[1];
 
         // Set UDP data length in bytes
-        self.udp_header.value[2] = (self.udp_data.value.len() + 2 * self.udp_header.value.len()) as u16;
+        udppacket.udp_header.value[2] = (udppacket.udp_data.value.len() + 2 * udppacket.udp_header.value.len()) as u16;
 
         // Zero-out UDP checksum because it is redundant with ethernet checksum & prone to overflow
-        // // Set UDP header checksum, summing up the parts of the "pseudoheader"
-        // // See https://en.wikipedia.org/wiki/User_Datagram_Protocol#IPv4_pseudo_header
-        // Clear old
-        self.udp_header.value[3] = 0;
-        // // Apply new
-        // let mut udp_checksum: u16 = 0_u16;
-        // udp_checksum = udp_checksum + calc_checksum(&self.ip_header.value[12..20]); // src, dst ipaddrs
-        // let protocol_bytes: [u8; 2] = (self.ip_header.value[9] as u16).to_be_bytes();
-        // udp_checksum = udp_checksum + calc_checksum(&protocol_bytes); // Protocol with zero-padding
-        // udp_checksum = udp_checksum + calc_checksum(&self.udp_header.to_be_bytes()); // UDP header
-        // udp_checksum = udp_checksum + calc_checksum(&self.udp_data); // The actual data
-        // self.udp_header.value[3] = udp_checksum;
+        udppacket.udp_header.value[3] = 0;
 
-        self
+        udppacket
     }
 }
 
