@@ -3,10 +3,10 @@
 use catnip::enet::{EthernetHeader, EthernetFrame, EthernetPacket, EtherType};
 use catnip::ip::{IPV4Addr, IPV4Header, DSCP};
 use catnip::udp::{UDPHeader, UDPPacket};
-use catnip::{Data, MACAddr};
+use catnip::{Data, MACAddr, Transportable};
 extern crate std; // To show debugging output
 
-pub fn main() -> () {
+fn main() -> () {
     // Some made-up addresses
     // MAC address in locally-administered address range
     // IP addresses in local network range
@@ -51,5 +51,9 @@ pub fn main() -> () {
     let enetheader: EthernetHeader = EthernetHeader::new(src_macaddr, dst_macaddr, EtherType::IPV4);
 
     // Build Ethernet frame
-    // let enetframe: EthernetFrame<>
+    const P: usize = UDPPacket::<0, 2>::LENGTH;
+    let enetframe: EthernetFrame<UDPPacket<0, 2>, P> = EthernetFrame {
+        header: enetheader,
+        data: udppacket
+    };
 }

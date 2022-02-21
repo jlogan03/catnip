@@ -105,9 +105,9 @@ where
     T: Transportable<P>,
 {
     /// Ethernet frame header
-    header: EthernetHeader,
+    pub header: EthernetHeader,
     /// Ethernet payload (likely some kind of IP packet)
-    data: T,
+    pub data: T,
 }
 
 impl<T, const P: usize> Transportable<{ P + 14 }> for EthernetFrame<T, P>
