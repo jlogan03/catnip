@@ -177,7 +177,7 @@ where
     /// Set source IP address
     pub fn src_ipaddr(mut self, v: IPV4Addr) -> Self {
         for i in 0..4_usize {
-            self.value[12 + i] = v.addr[i];
+            self.value[12 + i] = v.value[i];
         }
 
         self
@@ -186,7 +186,7 @@ where
     /// Set destination IP address
     pub fn dst_ipaddr(mut self, v: IPV4Addr) -> Self {
         for i in 0..4_usize {
-            self.value[16 + i] = v.addr[i];
+            self.value[16 + i] = v.value[i];
         }
 
         self
@@ -244,7 +244,8 @@ where
 /// IPV4 Address as bytes
 #[derive(Clone, Copy, Debug)]
 pub struct IPV4Addr {
-    addr: [u8; 4],
+    /// 4-byte IP address
+    pub value: [u8; 4],
 }
 
 /// Common choices of transport-layer protocols

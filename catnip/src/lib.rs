@@ -20,10 +20,15 @@ pub trait Transportable<const N: usize> {
 /// MAC Addresses & methods for converting between common formats
 /// Locally-administered addresses are [0x02, ...], [0x06, ...], [0x0A, ...], [0x0E, ...]
 #[derive(Clone, Copy, Debug)]
-pub struct MACAddress {
+pub struct MACAddr {
     /// Split 24/24 format, Block ID | Device ID
     pub value: [u8; 6],
 }
+
+// /// Ethernet data must be a multiple of 4 bytes (32-bit words)
+// pub struct Data<const Q: usize> {
+
+// }
 
 /// Calculate IP checksum per IETF-RFC-768
 /// following implementation guide in IETF-RFC-1071 section 4.1
