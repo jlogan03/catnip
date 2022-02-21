@@ -50,21 +50,21 @@ impl Transportable<8> for UDPHeader {
 ///
 /// M is size of UDP Data in 32-bit words
 #[derive(Clone, Copy, Debug)]
-pub struct UDPPacket<'a, const N: usize, const M: usize>
+pub struct UDPPacket<const N: usize, const M: usize>
 where
     [u8; 4 * N + 20]:,
     [u8; 4 * M]:,
 {
     /// IPV4 packet header
-    pub ip_header: IPV4Header<'a, N>,
+    pub ip_header: IPV4Header<N>,
     /// UDP datagram header
     pub udp_header: UDPHeader,
     /// Data to transmit; bytes in some multiple of 32 bit words
     pub udp_data: Data<M>,
 }
 
-impl<'a, const N: usize, const M: usize> Transportable<{ 4 * N + 20 + 4 * M + 8 }>
-    for UDPPacket<'a, N, M>
+impl<const N: usize, const M: usize> Transportable<{ 4 * N + 20 + 4 * M + 8 }>
+    for UDPPacket<N, M>
 where
     [u8; 4 * M]:,
     [u8; 4 * N + 20]:,
@@ -93,7 +93,7 @@ where
     }
 }
 
-impl<'a, const N: usize, const M: usize> UDPPacket<'a, N, M>
+impl<const N: usize, const M: usize> UDPPacket<N, M>
 where
     [u8; 4 * M]:,
     [u8; 4 * N + 20]:,
@@ -109,11 +109,11 @@ where
     ///
     /// M is size of UDP Data in 32-bit words
     pub fn new(
-        ip_header: IPV4Header<'a, N>,
+        ip_header: IPV4Header<N>,
         udp_header: UDPHeader,
         udp_data: Data<M>,
-    ) -> UDPPacket<'_, N, M> {
-        let mut udppacket: UDPPacket<'a, N, M> = UDPPacket::<N, M> {
+    ) -> UDPPacket<N, M> {
+        let mut udppacket: UDPPacket<N, M> = UDPPacket::<N, M> {
             ip_header: ip_header,
             udp_header: udp_header,
             udp_data: udp_data,

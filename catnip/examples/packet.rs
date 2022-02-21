@@ -50,6 +50,13 @@ fn main() -> () {
     // Build Ethernet frame header
     let enetheader: EthernetHeader = EthernetHeader::new(src_macaddr, dst_macaddr, EtherType::IPV4);
 
+    let ipheader_bytes = udppacket.ip_header.value;
+    // let ipheader_len = ipheader_bytes.len();
+
+    let udpheader_bytes = udpheader.to_be_bytes();
+    // println!("{:?}", bytes);
+
+
     // Build Ethernet frame
     // let enetframe = EthernetFrame::new(enetheader, udppacket);
 }

@@ -38,7 +38,7 @@ use crate::{Transportable, calc_ip_checksum};
 ///
 /// N is number of 32-bit words to reserve for the Options section
 #[derive(Clone, Copy, Debug)]
-pub struct IPV4Header<'a, const N: usize>
+pub struct IPV4Header<const N: usize>
 where
     [u8; 4 * N + 20]:,
 {
@@ -46,14 +46,14 @@ where
     pub value: [u8; 4 * N + 20],
 }
 
-impl<'a, const N: usize> IPV4Header<'a, N>
+impl<const N: usize> IPV4Header<N>
 where
     [u8; 4 * N + 20]:,
     [u16; 2 * N + 10]:,
     [u32; N + 5]:,
 {
     /// Start from some sensible defaults
-    pub fn new() -> IPV4Header<'a, N> {
+    pub fn new() -> Self {
         // Clear any existing values in the provided container
         let content: [u8; 4 * N + 20] = [0_u8; 4 * N + 20];
 
@@ -193,7 +193,7 @@ where
     }
 
     /// Make from 16-bit words
-    pub fn from_16bit_words<'b, const M: usize>(header16: &[u16; 2 * M + 10]) -> IPV4Header<'b, M>
+    pub fn from_16bit_words<'b, const M: usize>(header16: &[u16; 2 * M + 10]) -> IPV4Header<M>
     where
         [u16; 2 * M + 10]:,
         [u8; 4 * M + 20]:,
@@ -212,7 +212,7 @@ where
     }
 
     /// Make from 16-bit words
-    pub fn from_32bit_words<'b, const M: usize>(header32: &[u32; M + 5]) -> IPV4Header<'b, M>
+    pub fn from_32bit_words<'b, const M: usize>(header32: &[u32; M + 5]) -> IPV4Header<M>
     where
         [u32; M + 5]:,
         [u8; 4 * M + 20]:,
@@ -232,12 +232,12 @@ where
     }
 }
 
-impl<'a, const N: usize> Transportable<{ 4 * N + 20 }> for IPV4Header<'_, N>
+impl<'a, const N: usize> Transportable<{ 4 * N + 20 }> for IPV4Header<N>
 where
     [u8; 4 * N + 20]:,
 {
     fn to_be_bytes(&self) -> [u8; 4 * N + 20] {
-        self.value.clone()
+        self.value
     }
 }
 
