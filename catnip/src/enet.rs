@@ -100,20 +100,18 @@ impl Transportable<14> for EthernetHeader {
 /// 
 /// P is length of data's byte representation
 #[derive(Clone, Copy, Debug)]
-pub struct EthernetFrame<T, const P: usize>
-where
-    T: Transportable<P>,
+pub struct EthernetFrame<const P: usize>
 {
     /// Ethernet frame header
     pub header: EthernetHeader,
     /// Ethernet payload (likely some kind of IP packet)
-    pub data: T,
+    pub data: [u8; P],
 }
 
-impl<T, const P: usize> EthernetFrame<T, P> where T: Transportable<P> {
+impl<const P: usize> EthernetFrame<P> {
     /// Generate new, complete frame from components
-    pub fn new(header: EthernetHeader, data: T) -> Self {
-        let enetframe: EthernetFrame<T, P> = EthernetFrame {
+    pub fn new(header: EthernetHeader, data: [u8; P]) -> Self {
+        let enetframe: EthernetFrame<P> = EthernetFrame {
             header: header,
             data: data
         };
@@ -122,9 +120,7 @@ impl<T, const P: usize> EthernetFrame<T, P> where T: Transportable<P> {
     }
 }
 
-impl<T, const P: usize> Transportable<{ P + 14 }> for EthernetFrame<T, P>
-where
-    T: Transportable<P>,
+impl<const P: usize> Transportable<{ P + 14 }> for EthernetFrame<P>
 {
     /// Pack into big-endian (network) byte array
     fn to_be_bytes(&self) -> [u8; P + 14] {
@@ -134,7 +130,7 @@ where
             bytes[i] = v;
             i = i + 1;
         }
-        for v in self.data.to_be_bytes() {
+        for v in self.data {
             bytes[i] = v;
             i = i + 1;
         }
@@ -145,16 +141,12 @@ where
 
 /// Ethernet II packet (including preamble, start-frame delimiter, and interpacket gap)
 #[derive(Clone, Copy, Debug)]
-pub struct EthernetPacket<T, const P: usize>
-where
-    T: Transportable<P>,
+pub struct EthernetPacket<const P: usize>
 {
-    frame: EthernetFrame<T, P>,
+    frame: EthernetFrame<P>,
 }
 
-impl<T, const P: usize> Transportable<{ P + 14 + 24 }> for EthernetPacket<T, P>
-where
-    T: Transportable<P>,
+impl<const P: usize> Transportable<{ P + 14 + 24 }> for EthernetPacket<P>
 {
     fn to_be_bytes(&self) -> [u8; P + 14 + 24] {
         // Initialize output
