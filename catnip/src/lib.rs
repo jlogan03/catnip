@@ -127,7 +127,7 @@ mod tests {
             0x0a63_u16, 0xac10_u16, 0x0a0c_u16, 0x0F00_u16, 0_u16,
         ];
         let mut header: IPV4Header<1> = IPV4Header::<1>::from_16bit_words(&ipheader_16_extended);
-        header = header.header_checksum(); // Apply checksum value
+        header = header.header_checksum().finalize(); // Apply checksum value
         let cyclic_check = calc_ip_checksum(&header.value);
         assert_eq!(cyclic_check, 0_u16);
     }

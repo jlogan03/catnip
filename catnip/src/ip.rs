@@ -1,6 +1,6 @@
 //! Internet Protocol message header construction
 
-use crate::{Transportable, calc_ip_checksum};
+use crate::{calc_ip_checksum, Transportable};
 
 /// IPV4 header per IETF-RFC-791
 ///
@@ -57,44 +57,46 @@ where
         // Clear any existing values in the provided container
         let content: [u8; 4 * N + 20] = [0_u8; 4 * N + 20];
 
-        // Start a blank header
-        let mut header = IPV4Header { value: content };
-
-        // Apply some defaults
-        header = header
+        // Start a blank header and apply some sensible defaults
+        let header = IPV4Header { value: content }
             .version(Version::V4)
-            .header_length({5 + N} as u8)
+            .header_length({ 5 + N } as u8)
             .dscp(DSCP::Standard)
             .ttl(100)
-            .protocol(Protocol::UDP);
+            .protocol(Protocol::UDP)
+            .finalize();
 
         header
     }
 
+    /// Dereference to prevent droppage
+    pub fn finalize(&mut self) -> Self {
+        *self
+    }
+
     /// Set version
-    pub fn version(mut self, v: Version) -> Self {
+    pub fn version(&mut self, v: Version) -> &mut Self {
         self.value[0] = self.value[0] & 0b0000_1111; // Clear existing
         self.value[0] = self.value[0] | v as u8; // Apply new
         self
     }
 
     /// Set header length (in 32-bit words)
-    pub fn header_length(mut self, v: u8) -> Self {
+    pub fn header_length(&mut self, v: u8) -> &mut Self {
         self.value[0] = self.value[0] & 0b1111_0000; // Clear existing
         self.value[0] = self.value[0] | v as u8; // Apply new
         self
     }
 
     /// Set DSCP (first 6 bits of second byte)
-    pub fn dscp(mut self, v: DSCP) -> Self {
+    pub fn dscp(&mut self, v: DSCP) -> &mut Self {
         self.value[1] = self.value[1] & 0b00000011; // Clear existing
         self.value[1] = self.value[1] | v as u8; // Apply new
         self
     }
 
     /// Set total length of packet (header + body) in bytes
-    pub fn total_length(mut self, v: u16) -> Self
-    {
+    pub fn total_length(&mut self, v: u16) -> &mut Self {
         // Split into two bytes
         let bytes: [u8; 2] = v.to_be_bytes();
 
@@ -106,7 +108,7 @@ where
     }
 
     /// Set identification
-    pub fn identification(mut self, v: u16) -> Self {
+    pub fn identification(&mut self, v: u16) -> &mut Self {
         let bytes = v.to_be_bytes();
         self.value[4] = bytes[0];
         self.value[5] = bytes[1];
@@ -115,7 +117,7 @@ where
     }
 
     /// Set fragmentation flags
-    pub fn flags(mut self, v: Flags) -> Self {
+    pub fn flags(&mut self, v: Flags) -> &mut Self {
         match v {
             Flags::Clear => {
                 // Clear old if requested
@@ -131,7 +133,7 @@ where
     }
 
     /// Set fragmentation offset
-    pub fn frag_offs(mut self, v: u16) -> Self {
+    pub fn frag_offs(&mut self, v: u16) -> &mut Self {
         // Clip to 13 bits and split into bytes
         let v: u16 = v & 0b0001_1111_1111_1111;
         let bytes: [u8; 2] = v.to_be_bytes();
@@ -147,21 +149,21 @@ where
 
     /// Set Time-to-Live counter (number of bounces allowed)
     /// This counter decrements at each router and drops the packet at 0
-    pub fn ttl(mut self, v: u8) -> Self {
+    pub fn ttl(&mut self, v: u8) -> &mut Self {
         self.value[8] = v;
 
         self
     }
 
     /// Set protocol
-    pub fn protocol(mut self, v: Protocol) -> Self {
+    pub fn protocol(&mut self, v: Protocol) -> &mut Self {
         self.value[9] = v as u8;
 
         self
     }
 
     /// Calculate and set checksum
-    pub fn header_checksum(mut self) -> Self {
+    pub fn header_checksum(&mut self) -> &mut Self {
         // Clear old
         self.value[10] = 0;
         self.value[11] = 0;
@@ -175,7 +177,7 @@ where
     }
 
     /// Set source IP address
-    pub fn src_ipaddr(mut self, v: IPV4Addr) -> Self {
+    pub fn src_ipaddr(&mut self, v: IPV4Addr) -> &mut Self {
         for i in 0..4_usize {
             self.value[12 + i] = v.value[i];
         }
@@ -184,7 +186,7 @@ where
     }
 
     /// Set destination IP address
-    pub fn dst_ipaddr(mut self, v: IPV4Addr) -> Self {
+    pub fn dst_ipaddr(&mut self, v: IPV4Addr) -> &mut Self {
         for i in 0..4_usize {
             self.value[16 + i] = v.value[i];
         }
@@ -193,7 +195,7 @@ where
     }
 
     /// Make from 16-bit words
-    pub fn from_16bit_words<'b, const M: usize>(header16: &[u16; 2 * M + 10]) -> IPV4Header<M>
+    pub fn from_16bit_words<const M: usize>(header16: &[u16; 2 * M + 10]) -> IPV4Header<M>
     where
         [u16; 2 * M + 10]:,
         [u8; 4 * M + 20]:,
@@ -212,7 +214,7 @@ where
     }
 
     /// Make from 16-bit words
-    pub fn from_32bit_words<'b, const M: usize>(header32: &[u32; M + 5]) -> IPV4Header<M>
+    pub fn from_32bit_words<const M: usize>(header32: &[u32; M + 5]) -> IPV4Header<M>
     where
         [u32; M + 5]:,
         [u8; 4 * M + 20]:,

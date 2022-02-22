@@ -1,6 +1,6 @@
 //! Build a UDP/IP Ethernet packet and get its representation as network bytes
 
-use catnip::enet::{EthernetHeader, EthernetFrame, EthernetPacket, EtherType};
+use catnip::enet::{EtherType, EthernetFrame, EthernetHeader, EthernetPacket};
 use catnip::ip::{IPV4Addr, IPV4Header, DSCP};
 use catnip::udp::{UDPHeader, UDPPacket};
 use catnip::{Data, MACAddr, Transportable};
@@ -35,7 +35,8 @@ fn main() -> () {
     let ipheader: IPV4Header<0> = IPV4Header::new()
         .src_ipaddr(src_ipaddr)
         .dst_ipaddr(dst_ipaddr)
-        .dscp(DSCP::Realtime);
+        .dscp(DSCP::Realtime)
+        .finalize();
 
     // Build UDP header
     let udpheader: UDPHeader = UDPHeader::new(src_port, dst_port);
@@ -45,7 +46,7 @@ fn main() -> () {
         ip_header: ipheader,
         udp_header: udpheader,
         udp_data: data,
-    };  // Populates packet length fields for both IP and UDP headers
+    }; // Populates packet length fields for both IP and UDP headers
 
     // Build Ethernet frame header
     let enetheader: EthernetHeader = EthernetHeader::new(src_macaddr, dst_macaddr, EtherType::IPV4);
@@ -55,7 +56,6 @@ fn main() -> () {
 
     let udpheader_bytes = udpheader.to_be_bytes();
     // println!("{:?}", bytes);
-
 
     // Build Ethernet frame
     // let enetframe = EthernetFrame::new(enetheader, udppacket);
