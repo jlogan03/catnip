@@ -52,11 +52,8 @@ where
 {
     /// Start from some sensible defaults
     pub fn new() -> Self {
-        // Clear any existing values in the provided container
-        let content: [u8; 4 * N + 20] = [0_u8; 4 * N + 20];
-
         // Start a blank header and apply some sensible defaults
-        let header = IPV4Header { value: content }
+        let header = IPV4Header { value: [0_u8; 4 * N + 20] }
             .version(Version::V4)
             .header_length({ 5 + N } as u8)
             .dscp(DSCP::Standard)
@@ -228,14 +225,18 @@ where
 
         header
     }
-}
 
-impl<'a, const N: usize> Transportable<{ 4 * N + 20 }> for IPV4Header<N>
-{
     fn to_be_bytes(&self) -> [u8; 4 * N + 20] {
         self.value
     }
 }
+
+// impl<'a, const N: usize> Transportable<{ 4 * N + 20 }> for IPV4Header<N>
+// {
+//     fn to_be_bytes(&self) -> [u8; 4 * N + 20] {
+//         self.value
+//     }
+// }
 
 /// IPV4 Address as bytes
 #[derive(Clone, Copy, Debug)]

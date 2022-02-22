@@ -63,36 +63,6 @@ where
     pub udp_data: Data<M>,
 }
 
-impl<const N: usize, const M: usize> Transportable<{ 4 * N + 20 + 4 * M + 8 }>
-    for UDPPacket<N, M>
-where
-    [u8; 4 * M]:,
-    [u8; 4 * N + 20]:,
-    [u8; 4 * N + 20 + 4 * M + 8]:,
-{
-
-    /// Pack into big-endian (network) byte array
-    fn to_be_bytes(&self) -> [u8; 4 * N + 20 + 4 * M + 8] {
-        // Pack a byte array with IP header, UDP header, and UDP data
-        let mut bytes = [0_u8; 4 * N + 20 + 4 * M + 8];
-        let mut i = 0;
-        for v in self.ip_header.to_be_bytes() {
-            bytes[i] = v;
-            i = i + 1;
-        }
-        for v in self.udp_header.to_be_bytes() {
-            bytes[i] = v;
-            i = i + 1;
-        }
-        for v in self.udp_data.value {
-            bytes[i] = v;
-            i = i + 1;
-        }
-
-        bytes
-    }
-}
-
 impl<const N: usize, const M: usize> UDPPacket<N, M>
 where
     [u8; 4 * M]:,
@@ -102,6 +72,11 @@ where
 {
     /// Length of byte representation
     pub const LENGTH: usize = 4 * N + 20 + 4 * M + 8;
+
+    /// Length of instance's byte representation
+    pub fn len(&self) -> usize {
+        4 * N + 20 + 4 * M + 8
+    }
 
     /// Build a UDP packet and populate the components that depend on the combined data
     ///
@@ -139,6 +114,27 @@ where
         udppacket.udp_header.value[3] = 0;
 
         udppacket
+    }
+
+    /// Pack into big-endian (network) byte array
+    pub fn to_be_bytes(&self) -> [u8; 4 * N + 20 + 4 * M + 8] {
+        // Pack a byte array with IP header, UDP header, and UDP data
+        let mut bytes = [0_u8; 4 * N + 20 + 4 * M + 8];
+        let mut i = 0;
+        for v in self.ip_header.value {
+            bytes[i] = v;
+            i = i + 1;
+        }
+        for v in self.udp_header.to_be_bytes() {
+            bytes[i] = v;
+            i = i + 1;
+        }
+        for v in self.udp_data.value {
+            bytes[i] = v;
+            i = i + 1;
+        }
+
+        bytes
     }
 }
 
