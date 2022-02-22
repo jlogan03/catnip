@@ -49,8 +49,6 @@ where
 impl<const N: usize> IPV4Header<N>
 where
     [u8; 4 * N + 20]:,
-    [u16; 2 * N + 10]:,
-    [u32; N + 5]:,
 {
     /// Start from some sensible defaults
     pub fn new() -> Self {
