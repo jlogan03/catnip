@@ -197,7 +197,6 @@ where
     /// Make from 16-bit words
     pub fn from_16bit_words<const M: usize>(header16: &[u16; 2 * M + 10]) -> IPV4Header<M>
     where
-        [u16; 2 * M + 10]:,
         [u8; 4 * M + 20]:,
     {
         // Convert words to bytes
@@ -216,7 +215,6 @@ where
     /// Make from 16-bit words
     pub fn from_32bit_words<const M: usize>(header32: &[u32; M + 5]) -> IPV4Header<M>
     where
-        [u32; M + 5]:,
         [u8; 4 * M + 20]:,
     {
         // Convert words to bytes
@@ -235,8 +233,6 @@ where
 }
 
 impl<'a, const N: usize> Transportable<{ 4 * N + 20 }> for IPV4Header<N>
-where
-    [u8; 4 * N + 20]:,
 {
     fn to_be_bytes(&self) -> [u8; 4 * N + 20] {
         self.value
