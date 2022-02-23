@@ -12,17 +12,46 @@ pub mod udp; // Transport layer
 
 /// All protocols' headers, data, and frames must be able to convert to byte array
 /// in order to be consumed by EMAC/PHY drivers for transmission
-pub trait Transportable<const N: usize> {
-    /// Convert to big-endian (network) byte array
-    fn to_be_bytes(&self) -> [u8; N];
-}
+/// TODO: bring this impl back in once const generic exprs in trait bounds no longer break the compiler
+// pub trait Transportable<const N: usize> {
+//     /// Length of byte representation
+//     const LENGTH: usize = N;
+//     /// Get length of byte representation
+//     fn len(&self) -> usize {
+//         Self::LENGTH
+//     }
+//     /// Convert to big-endian (network) byte array
+//     fn to_be_bytes(&self) -> [u8; N];
+// }
 
 /// MAC Addresses & methods for converting between common formats
 /// Locally-administered addresses are [0x02, ...], [0x06, ...], [0x0A, ...], [0x0E, ...]
 #[derive(Clone, Copy, Debug)]
-pub struct MACAddress {
+pub struct MACAddr {
     /// Split 24/24 format, Block ID | Device ID
     pub value: [u8; 6],
+}
+
+/// IP and UDP require their data to be a multiple of 4 bytes (32-bit words)
+#[derive(Clone, Copy, Debug)]
+pub struct Data<const Q: usize> where [u8; 4 * Q]:, {
+    /// Byte array of data
+    pub value: [u8; 4 * Q]
+}
+
+impl<const Q: usize> Data<Q> where [u8; 4 * Q]:,  {
+    /// Length of byte representation
+    const LENGTH: usize = 4 * Q;
+
+    /// Get length of byte representation
+    fn len(&self) -> usize {
+        Self::LENGTH
+    }
+
+    /// Pack into big-endian (network) byte array
+    pub fn to_be_bytes(&self) -> [u8; 4 * Q] {
+        self.value
+    }
 }
 
 /// Calculate IP checksum per IETF-RFC-768
@@ -108,7 +137,7 @@ mod tests {
             0x0a63_u16, 0xac10_u16, 0x0a0c_u16, 0x0F00_u16, 0_u16,
         ];
         let mut header: IPV4Header<1> = IPV4Header::<1>::from_16bit_words(&ipheader_16_extended);
-        header = header.header_checksum(); // Apply checksum value
+        header = header.header_checksum().finalize(); // Apply checksum value
         let cyclic_check = calc_ip_checksum(&header.value);
         assert_eq!(cyclic_check, 0_u16);
     }
