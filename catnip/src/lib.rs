@@ -49,7 +49,7 @@ impl<const Q: usize> Data<Q> where [u8; 4 * Q]:,  {
     }
 
     /// Pack into big-endian (network) byte array
-    fn to_be_bytes(&self) -> [u8; 4 * Q] {
+    pub fn to_be_bytes(&self) -> [u8; 4 * Q] {
         self.value
     }
 }

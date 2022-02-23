@@ -226,7 +226,16 @@ where
         header
     }
 
-    fn to_be_bytes(&self) -> [u8; 4 * N + 20] {
+    /// Length of byte representation
+    const LENGTH: usize = 4 * N + 20;
+
+    /// Get length of byte representation
+    fn len(&self) -> usize {
+        Self::LENGTH
+    }
+
+    /// Pack into big-endian (network) byte array
+    pub fn to_be_bytes(&self) -> [u8; 4 * N + 20] {
         self.value
     }
 }

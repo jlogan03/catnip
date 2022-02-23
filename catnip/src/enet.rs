@@ -97,7 +97,7 @@ impl EthernetHeader {
     }
 
     /// Pack into big-endian (network) byte array
-    fn to_be_bytes(&self) -> [u8; 14] {
+    pub fn to_be_bytes(&self) -> [u8; 14] {
         self.value
     }
 }
@@ -139,15 +139,6 @@ where
     /// Get length of byte representation
     pub fn len(&self) -> usize {
         Self::LENGTH
-    }
-
-    ///asdf
-    pub fn lengths(&self) -> (usize, usize, usize) {
-        (
-            4 * N + 20 + 4 * M + 14,
-            self.header.value.len(),
-            self.payload.to_be_bytes().len(),
-        )
     }
 
     /// Pack into big-endian (network) byte array
