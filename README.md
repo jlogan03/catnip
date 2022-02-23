@@ -13,6 +13,8 @@ be implemented and I'm sure some bugs are yet to be found.
 
 # To-do
 
+* Add parser for received data
+* Add UDP psuedo-socket w/ arbitrary async send/receive functions
 * Add DHCP for autonegotiation of IP address
 * Add PTP functionality
 * Add VLAN functionality
