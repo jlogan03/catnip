@@ -1,6 +1,6 @@
 //! Build a UDP/IP Ethernet packet and get its representation as network bytes
 
-use catnip::enet::{EtherType, EthernetFrame, EthernetHeader, EthernetPacket};
+use catnip::enet::{EtherType, EthernetFrameUDP, EthernetHeader, EthernetPacketUDP};
 use catnip::ip::{IPV4Addr, IPV4Header, DSCP};
 use catnip::udp::{UDPHeader, UDPPacket};
 use catnip::{Data, MACAddr};
@@ -52,11 +52,13 @@ fn main() -> () {
     let enetheader: EthernetHeader = EthernetHeader::new(src_macaddr, dst_macaddr, EtherType::IPV4);
 
     // Build Ethernet frame
-    let enetframe = EthernetFrame::new(enetheader, udppacket.to_be_bytes());
+    // Unfortunately the payload has to be reduced to bytes here until const generic expr trait bounds work
+    let enetframe = EthernetFrameUDP::new(enetheader, udppacket);
+    println!("{:?}", enetframe.lengths());
     println!("{:?}", enetframe.to_be_bytes());
 
     // Build Ethernet packet
-    let enetpacket = EthernetPacket::new(enetframe);
+    let enetpacket = EthernetPacketUDP::new(enetframe);
     println!("{:?}", &enetpacket);
     println!("{:?}", enetpacket.to_be_bytes());
 }

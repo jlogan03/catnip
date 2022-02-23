@@ -1,7 +1,7 @@
 //! Ethernet II protocol per IEEE 802.3
 //! Diagram at https://en.wikipedia.org/wiki/Ethernet_frame#Ethernet_II
 
-use crate::{MACAddr};
+use crate::{udp::UDPPacket, MACAddr};
 
 /// Combined preamble and start-frame delimiter because they are never changed or separated
 const PREAMBLE: [u8; 8] = [
@@ -102,22 +102,30 @@ impl EthernetHeader {
     }
 }
 
-
 /// Ethernet II frame (variable parts of a packet)
 ///
 /// P is length of data's byte representation
-#[derive(Clone, Copy, Debug)]
-pub struct EthernetFrame<const P: usize> {
+#[derive(Clone, Debug)]
+pub struct EthernetFrameUDP<const N: usize, const M: usize>
+where
+    [u8; 4 * N + 20]:,
+    [u8; 4 * M]:,
+{
     /// Ethernet frame header
     pub header: EthernetHeader,
     /// Ethernet payload (likely some kind of IP packet)
-    pub payload: [u8; P],
+    pub payload: UDPPacket<N, M>,
 }
 
-impl<const P: usize> EthernetFrame<P> {
+impl<const N: usize, const M: usize> EthernetFrameUDP<N, M>
+where
+    [u8; 4 * N + 20]:,
+    [u8; 4 * M]:,
+    [u8; 4 * N + 20 + 4 * M + 8]:,
+{
     /// Generate new, complete frame from components
-    pub fn new(header: EthernetHeader, payload: [u8; P]) -> Self {
-        let enetframe: EthernetFrame<P> = EthernetFrame {
+    pub fn new(header: EthernetHeader, payload: UDPPacket<N, M>) -> Self {
+        let enetframe: EthernetFrameUDP<N, M> = EthernetFrameUDP {
             header: header,
             payload: payload,
         };
@@ -126,45 +134,67 @@ impl<const P: usize> EthernetFrame<P> {
     }
 
     /// Length of byte representation
-    const LENGTH: usize = P + 14;
+    const LENGTH: usize = 4 * N + 20 + 4 * M + 14 + 8;
 
     /// Get length of byte representation
     pub fn len(&self) -> usize {
         Self::LENGTH
     }
 
+    ///asdf
+    pub fn lengths(&self) -> (usize, usize, usize) {
+        (
+            4 * N + 20 + 4 * M + 14,
+            self.header.value.len(),
+            self.payload.to_be_bytes().len(),
+        )
+    }
+
     /// Pack into big-endian (network) byte array
-    pub fn to_be_bytes(&self) -> [u8; P + 14] {
-        let mut bytes: [u8; P + 14] = [0_u8; P + 14];
+    pub fn to_be_bytes(&self) -> [u8; (4 * N + 20) + (4 * M) + 14 + 8] {
+        let mut bytes = [0_u8; (4 * N + 20) + (4 * M) + 14 + 8];
         let mut i = 0;
         for v in self.header.value {
             bytes[i] = v;
             i = i + 1;
         }
-        for v in self.payload {
+        for v in self.payload.to_be_bytes() {
             bytes[i] = v;
             i = i + 1;
         }
+
+        // assert_eq!(i, bytes.len());
 
         bytes
     }
 }
 
-
 /// Ethernet II packet (including preamble, start-frame delimiter, and interpacket gap)
-#[derive(Clone, Copy, Debug)]
-pub struct EthernetPacket<const P: usize> {
-    frame: EthernetFrame<P>,
+#[derive(Clone, Debug)]
+pub struct EthernetPacketUDP<const N: usize, const M: usize>
+where
+    [u8; 4 * N + 20]:,
+    [u8; 4 * M]:,
+    [u8; 4 * N + 20 + 4 * M + 8]:,
+    [u8; (4 * N + 20) + (4 * M) + 14 + 8]:,
+{
+    frame: EthernetFrameUDP<N, M>,
 }
 
-impl<const P: usize> EthernetPacket<P> {
+impl<const N: usize, const M: usize> EthernetPacketUDP<N, M>
+where
+    [u8; 4 * N + 20]:,
+    [u8; 4 * M]:,
+    [u8; 4 * N + 20 + 4 * M + 8]:,
+    [u8; (4 * N + 20) + (4 * M) + 14 + 8]:,
+{
     /// Build a new packet from a frame
-    pub fn new(frame: EthernetFrame<P>) -> Self {
-        EthernetPacket { frame: frame }
+    pub fn new(frame: EthernetFrameUDP<N, M>) -> Self {
+        EthernetPacketUDP { frame: frame }
     }
 
     /// Length of byte representation
-    const LENGTH: usize = P + 14 + 24;
+    const LENGTH: usize = EthernetFrameUDP::<N, M>::LENGTH + 14 + 24;
 
     /// Get length of byte representation
     pub fn len(&self) -> usize {
@@ -172,14 +202,14 @@ impl<const P: usize> EthernetPacket<P> {
     }
 
     /// Pack into big-endian (network) byte array
-    pub fn to_be_bytes(&self) -> [u8; P + 14 + 24] {
+    pub fn to_be_bytes(&self) -> [u8; (4 * N + 20) + (4 * M) + 14 + 8 + 24] {
         // Initialize output
-        let mut bytes = [0_u8; P + 14 + 24];
+        let mut bytes = [0_u8; 4 * N + 20 + 4 * M + 14 + 8 + 24];
 
         // Calculate CRC32 checksum over ethernet frame
         // TODO: this could be done faster using either a persistent Hasher
         // or a CRC32 peripheral
-        let frame_bytes: [u8; P + 14] = self.frame.to_be_bytes();
+        let frame_bytes = self.frame.to_be_bytes();
         let checksum: u32 = crc32fast::hash(&frame_bytes);
         let checksum_bytes: [u8; 4] = checksum.to_be_bytes();
 
@@ -205,10 +235,11 @@ impl<const P: usize> EthernetPacket<P> {
             i = i + 1;
         }
 
+        // assert_eq!(i, bytes.len());
+
         bytes
     }
 }
-
 
 /// EtherType tag values (incomplete list - there are many more not implemented here)
 ///

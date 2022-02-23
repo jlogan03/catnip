@@ -11,7 +11,8 @@ pub mod ip; // Internet layer
 pub mod udp; // Transport layer
 
 /// All protocols' headers, data, and frames must be able to convert to byte array
-// /// in order to be consumed by EMAC/PHY drivers for transmission
+/// in order to be consumed by EMAC/PHY drivers for transmission
+/// TODO: bring this impl back in once const generic exprs in trait bounds no longer break the compiler
 // pub trait Transportable<const N: usize> {
 //     /// Length of byte representation
 //     const LENGTH: usize = N;
@@ -31,12 +32,11 @@ pub struct MACAddr {
     pub value: [u8; 6],
 }
 
-/// Ethernet data must be a multiple of 4 bytes (32-bit words)
+/// IP and UDP require their data to be a multiple of 4 bytes (32-bit words)
 #[derive(Clone, Copy, Debug)]
 pub struct Data<const Q: usize> where [u8; 4 * Q]:, {
     /// Byte array of data
     pub value: [u8; 4 * Q]
-
 }
 
 impl<const Q: usize> Data<Q> where [u8; 4 * Q]:,  {
