@@ -13,7 +13,6 @@ be implemented and I'm sure some bugs are yet to be found.
 
 # To-do
 
-* Finish UDP implementation
 * Add DHCP for autonegotiation of IP address
 * Add PTP functionality
 * Add VLAN functionality
