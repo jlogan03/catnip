@@ -1,7 +1,7 @@
 //! Ethernet II protocol per IEEE 802.3
 //! Diagram at https://en.wikipedia.org/wiki/Ethernet_frame#Ethernet_II
 
-use crate::{MACAddr, Transportable};
+use crate::{MACAddr};
 
 /// Combined preamble and start-frame delimiter because they are never changed or separated
 const PREAMBLE: [u8; 8] = [
@@ -87,22 +87,27 @@ impl EthernetHeader {
     pub fn finalize(&mut self) -> Self {
         *self
     }
-}
 
-impl Transportable<14> for EthernetHeader {
+    /// Length of byte representation
+    const LENGTH: usize = 14;
+
+    /// Get length of byte representation
+    pub fn len(&self) -> usize {
+        Self::LENGTH
+    }
+
     /// Pack into big-endian (network) byte array
     fn to_be_bytes(&self) -> [u8; 14] {
         self.value
     }
 }
 
+
 /// Ethernet II frame (variable parts of a packet)
-/// 
+///
 /// P is length of data's byte representation
 #[derive(Clone, Copy, Debug)]
-pub struct EthernetFrame<const P: usize>
-
-{
+pub struct EthernetFrame<const P: usize> {
     /// Ethernet frame header
     pub header: EthernetHeader,
     /// Ethernet payload (likely some kind of IP packet)
@@ -114,18 +119,22 @@ impl<const P: usize> EthernetFrame<P> {
     pub fn new(header: EthernetHeader, payload: [u8; P]) -> Self {
         let enetframe: EthernetFrame<P> = EthernetFrame {
             header: header,
-            payload: payload
+            payload: payload,
         };
 
         enetframe
     }
-}
 
-impl<const P: usize> Transportable<{ P + 14 }> for EthernetFrame<P>
+    /// Length of byte representation
+    const LENGTH: usize = P + 14;
 
-{
+    /// Get length of byte representation
+    pub fn len(&self) -> usize {
+        Self::LENGTH
+    }
+
     /// Pack into big-endian (network) byte array
-    fn to_be_bytes(&self) -> [u8; P + 14] {
+    pub fn to_be_bytes(&self) -> [u8; P + 14] {
         let mut bytes: [u8; P + 14] = [0_u8; P + 14];
         let mut i = 0;
         for v in self.header.value {
@@ -141,18 +150,29 @@ impl<const P: usize> Transportable<{ P + 14 }> for EthernetFrame<P>
     }
 }
 
+
 /// Ethernet II packet (including preamble, start-frame delimiter, and interpacket gap)
 #[derive(Clone, Copy, Debug)]
-pub struct EthernetPacket<const P: usize>
-
-{
+pub struct EthernetPacket<const P: usize> {
     frame: EthernetFrame<P>,
 }
 
-impl<const P: usize> Transportable<{ P + 14 + 24 }> for EthernetPacket<P>
+impl<const P: usize> EthernetPacket<P> {
+    /// Build a new packet from a frame
+    pub fn new(frame: EthernetFrame<P>) -> Self {
+        EthernetPacket { frame: frame }
+    }
 
-{
-    fn to_be_bytes(&self) -> [u8; P + 14 + 24] {
+    /// Length of byte representation
+    const LENGTH: usize = P + 14 + 24;
+
+    /// Get length of byte representation
+    pub fn len(&self) -> usize {
+        Self::LENGTH
+    }
+
+    /// Pack into big-endian (network) byte array
+    pub fn to_be_bytes(&self) -> [u8; P + 14 + 24] {
         // Initialize output
         let mut bytes = [0_u8; P + 14 + 24];
 
@@ -188,6 +208,7 @@ impl<const P: usize> Transportable<{ P + 14 + 24 }> for EthernetPacket<P>
         bytes
     }
 }
+
 
 /// EtherType tag values (incomplete list - there are many more not implemented here)
 ///

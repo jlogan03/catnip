@@ -1,7 +1,7 @@
 //! User Datagram Protocol
 
 use crate::ip::IPV4Header;
-use crate::{calc_ip_checksum, Data, Transportable};
+use crate::{calc_ip_checksum, Data};
 
 /// UDP datagram header structure like
 ///
@@ -28,11 +28,17 @@ impl UDPHeader {
 
         header
     }
-}
 
-impl Transportable<8> for UDPHeader {
+    /// Length of byte representation
+    const LENGTH: usize = 8;
+
+    /// Get length of byte representation
+    fn len(&self) -> usize {
+        Self::LENGTH
+    }
+
     /// Pack into big-endian (network) byte array
-    fn to_be_bytes(&self) -> [u8; 8] {
+    pub fn to_be_bytes(&self) -> [u8; 8] {
         let mut header_bytes = [0_u8; 8];
         for (i, v) in self.value.iter().enumerate() {
             let bytes: [u8; 2] = v.to_be_bytes();
@@ -43,6 +49,7 @@ impl Transportable<8> for UDPHeader {
         header_bytes
     }
 }
+
 
 /// IP message frame for UDP protocol
 ///
@@ -70,14 +77,6 @@ where
     [u8; 4 * N + 20 + 4 * M + 8]:, // Required for Transportable trait
     // UDPPacket<'a, N, M>: Transportable<{ 4 * N + 20 + 4 * M + 8 }>,
 {
-    /// Length of byte representation
-    pub const LENGTH: usize = 4 * N + 20 + 4 * M + 8;
-
-    /// Length of instance's byte representation
-    pub fn len(&self) -> usize {
-        4 * N + 20 + 4 * M + 8
-    }
-
     /// Build a UDP packet and populate the components that depend on the combined data
     ///
     /// N is size of IP Options in 32-bit words
@@ -114,6 +113,14 @@ where
         udppacket.udp_header.value[3] = 0;
 
         udppacket
+    }
+
+    /// Length of byte representation
+    pub const LENGTH: usize = 4 * N + 20 + 4 * M + 8;
+
+    /// Length of instance's byte representation
+    pub fn len(&self) -> usize {
+        4 * N + 20 + 4 * M + 8
     }
 
     /// Pack into big-endian (network) byte array

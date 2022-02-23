@@ -3,7 +3,7 @@
 use catnip::enet::{EtherType, EthernetFrame, EthernetHeader, EthernetPacket};
 use catnip::ip::{IPV4Addr, IPV4Header, DSCP};
 use catnip::udp::{UDPHeader, UDPPacket};
-use catnip::{Data, MACAddr, Transportable};
+use catnip::{Data, MACAddr};
 extern crate std; // To show debugging output
 
 fn main() -> () {
@@ -52,6 +52,11 @@ fn main() -> () {
     let enetheader: EthernetHeader = EthernetHeader::new(src_macaddr, dst_macaddr, EtherType::IPV4);
 
     // Build Ethernet frame
-    let payload = udppacket.to_be_bytes();
-    let enetframe = EthernetFrame::new(enetheader, payload);
+    let enetframe = EthernetFrame::new(enetheader, udppacket.to_be_bytes());
+    println!("{:?}", enetframe.to_be_bytes());
+
+    // Build Ethernet packet
+    let enetpacket = EthernetPacket::new(enetframe);
+    println!("{:?}", &enetpacket);
+    println!("{:?}", enetpacket.to_be_bytes());
 }

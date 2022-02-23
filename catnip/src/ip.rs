@@ -1,6 +1,6 @@
 //! Internet Protocol message header construction
 
-use crate::{calc_ip_checksum, Transportable};
+use crate::{calc_ip_checksum};
 
 /// IPV4 header per IETF-RFC-791
 ///

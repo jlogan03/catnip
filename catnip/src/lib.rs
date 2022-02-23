@@ -11,17 +11,17 @@ pub mod ip; // Internet layer
 pub mod udp; // Transport layer
 
 /// All protocols' headers, data, and frames must be able to convert to byte array
-/// in order to be consumed by EMAC/PHY drivers for transmission
-pub trait Transportable<const N: usize> {
-    /// Length of byte representation
-    const LENGTH: usize = N;
-    /// Get length of byte representation
-    fn len(&self) -> usize {
-        Self::LENGTH
-    }
-    /// Convert to big-endian (network) byte array
-    fn to_be_bytes(&self) -> [u8; N];
-}
+// /// in order to be consumed by EMAC/PHY drivers for transmission
+// pub trait Transportable<const N: usize> {
+//     /// Length of byte representation
+//     const LENGTH: usize = N;
+//     /// Get length of byte representation
+//     fn len(&self) -> usize {
+//         Self::LENGTH
+//     }
+//     /// Convert to big-endian (network) byte array
+//     fn to_be_bytes(&self) -> [u8; N];
+// }
 
 /// MAC Addresses & methods for converting between common formats
 /// Locally-administered addresses are [0x02, ...], [0x06, ...], [0x0A, ...], [0x0E, ...]
@@ -36,9 +36,19 @@ pub struct MACAddr {
 pub struct Data<const Q: usize> where [u8; 4 * Q]:, {
     /// Byte array of data
     pub value: [u8; 4 * Q]
+
 }
 
-impl<const Q: usize> Transportable<{4 * Q}> for Data<Q> where [u8; 4 * Q]:, {
+impl<const Q: usize> Data<Q> where [u8; 4 * Q]:,  {
+    /// Length of byte representation
+    const LENGTH: usize = 4 * Q;
+
+    /// Get length of byte representation
+    fn len(&self) -> usize {
+        Self::LENGTH
+    }
+
+    /// Pack into big-endian (network) byte array
     fn to_be_bytes(&self) -> [u8; 4 * Q] {
         self.value
     }
