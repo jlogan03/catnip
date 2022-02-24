@@ -6,6 +6,9 @@
 #![feature(generic_const_exprs)]
 #![feature(test)]
 
+#[cfg(release)]
+extern crate panic_never;
+
 pub mod enet; // Link Layer
 pub mod ip; // Internet layer
 pub mod udp; // Transport layer

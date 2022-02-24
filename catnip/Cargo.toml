@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 crc32fast = { version = "1.3.2", default-features = false }
+panic-never = "0.1.0"
