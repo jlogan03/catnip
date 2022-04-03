@@ -6,6 +6,7 @@ description = "Minimal UDP/IP ethernet stack for use on private networks for dat
 homepage = "https://github.com/jlogan03/catnip"
 repository = "https://github.com/jlogan03/catnip"
 readme = "../README.md"
+license_file = "../LICENSE"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
