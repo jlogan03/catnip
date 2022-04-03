@@ -61,6 +61,7 @@ impl<const Q: usize> Data<Q> where [u8; 4 * Q]:,  {
 /// following implementation guide in IETF-RFC-1071 section 4.1
 /// https://datatracker.ietf.org/doc/html/rfc1071#section-4
 /// using a section of a byte array
+#[cfg(crc)]
 pub fn calc_ip_checksum(data: &[u8]) -> u16 {
     let n: usize = data.len();
     let mut sum: i32 = 0;
@@ -90,6 +91,14 @@ pub fn calc_ip_checksum(data: &[u8]) -> u16 {
 
     return checksum;
 }
+
+
+/// Return blank checksum; real checksum must be calculated by hardware
+#[cfg(not(crc))]
+pub fn calc_ip_checksum(data: &[u8]) -> u16 {
+    0_u16
+}
+
 
 #[cfg(test)]
 #[macro_use]
