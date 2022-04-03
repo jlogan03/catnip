@@ -61,7 +61,7 @@ impl<const Q: usize> Data<Q> where [u8; 4 * Q]:,  {
 /// following implementation guide in IETF-RFC-1071 section 4.1
 /// https://datatracker.ietf.org/doc/html/rfc1071#section-4
 /// using a section of a byte array
-#[cfg(crc)]
+#[cfg(feature = "crc")]
 pub fn calc_ip_checksum(data: &[u8]) -> u16 {
     let n: usize = data.len();
     let mut sum: i32 = 0;
@@ -105,7 +105,7 @@ pub fn calc_ip_checksum(data: &[u8]) -> u16 {
 extern crate std;
 
 #[cfg(test)]
-#[cfg(crc)]
+#[cfg(feature = "crc")]
 mod tests {
 
     use crate::{calc_ip_checksum, ip::IPV4Header};
