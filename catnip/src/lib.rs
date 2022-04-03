@@ -105,6 +105,7 @@ pub fn calc_ip_checksum(data: &[u8]) -> u16 {
 extern crate std;
 
 #[cfg(test)]
+#[cfg(crc)]
 mod tests {
 
     use crate::{calc_ip_checksum, ip::IPV4Header};
