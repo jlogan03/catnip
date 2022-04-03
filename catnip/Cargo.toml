@@ -2,8 +2,15 @@
 name = "catnip"
 version = "0.1.1"
 edition = "2021"
+description = "Minimal UDP/IP ethernet stack for use on private networks for data acquisition"
+homepage = "https://github.com/jlogan03/catnip"
+repository = "https://github.com/jlogan03/catnip"
+readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+panic-never = "0.1.0"
+
+[crc]
 crc32fast = { version = "1.3.2", default-features = false }

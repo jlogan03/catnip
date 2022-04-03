@@ -238,14 +238,17 @@ where
     pub fn to_be_bytes(&self) -> [u8; 4 * N + 20] {
         self.value
     }
-}
 
-// impl<'a, const N: usize> Transportable<{ 4 * N + 20 }> for IPV4Header<N>
-// {
-//     fn to_be_bytes(&self) -> [u8; 4 * N + 20] {
-//         self.value
-//     }
-// }
+    /// Parse from big-endian (network) byte array
+    pub fn from_be_bytes(bytes: &[u8; 4 * N + 20]) {
+        let version = match bytes[0] | 0b0000_1111 {
+            4 => Version::V4,
+            6 => Version::V6,
+            _ => Version::V4  // Default to IPV4 if the version field is invalid
+        };
+
+    }
+}
 
 /// IPV4 Address as bytes
 #[derive(Clone, Copy, Debug)]
