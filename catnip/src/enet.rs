@@ -1,4 +1,5 @@
 //! Ethernet II protocol per IEEE 802.3
+//! 
 //! Diagram at https://en.wikipedia.org/wiki/Ethernet_frame#Ethernet_II
 
 use crate::{udp::UDPPacket, MACAddr};
@@ -212,8 +213,7 @@ where
         let mut bytes = [0_u8; 4 * N + 20 + 4 * M + 14 + 8 + 24];
 
         // Calculate CRC32 checksum over ethernet frame
-        // TODO: this could be done faster using either a persistent Hasher
-        // or a CRC32 peripheral
+        // TODO: this could be done faster using a persistent Hasher
         let frame_bytes = self.frame.to_be_bytes();
         let checksum: u32 = self.calc_enet_checksum(&frame_bytes);
         let checksum_bytes: [u8; 4] = checksum.to_be_bytes();

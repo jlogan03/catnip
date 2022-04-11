@@ -13,9 +13,9 @@ pub mod enet; // Link Layer
 pub mod ip; // Internet layer
 pub mod udp; // Transport layer
 
-/// All protocols' headers, data, and frames must be able to convert to byte array
-/// in order to be consumed by EMAC/PHY drivers for transmission
-/// TODO: bring this impl back in once const generic exprs in trait bounds no longer break the compiler
+// All protocols' headers, data, and frames must be able to convert to byte array
+// in order to be consumed by EMAC/PHY drivers for transmission
+// TODO: bring this impl back in once const generic exprs in trait bounds no longer break the compiler
 // pub trait Transportable<const N: usize> {
 //     /// Length of byte representation
 //     const LENGTH: usize = N;
@@ -28,15 +28,25 @@ pub mod udp; // Transport layer
 // }
 
 /// MAC Addresses & methods for converting between common formats
+/// 
 /// Locally-administered addresses are [0x02, ...], [0x06, ...], [0x0A, ...], [0x0E, ...]
 #[derive(Clone, Copy, Debug)]
+#[repr(transparent)]
 pub struct MACAddr {
     /// Split 24/24 format, Block ID | Device ID
     pub value: [u8; 6],
 }
 
+/// IPV4 Address as bytes
+#[derive(Clone, Copy, Debug)]
+pub struct IPV4Addr {
+    /// 4-byte IP address
+    pub value: [u8; 4],
+}
+
 /// IP and UDP require their data to be a multiple of 4 bytes (32-bit words)
 #[derive(Clone, Copy, Debug)]
+#[repr(transparent)]
 pub struct Data<const Q: usize> where [u8; 4 * Q]:, {
     /// Byte array of data
     pub value: [u8; 4 * Q]
@@ -58,8 +68,11 @@ impl<const Q: usize> Data<Q> where [u8; 4 * Q]:,  {
 }
 
 /// Calculate IP checksum per IETF-RFC-768
+/// 
 /// following implementation guide in IETF-RFC-1071 section 4.1
+/// 
 /// https://datatracker.ietf.org/doc/html/rfc1071#section-4
+/// 
 /// using a section of a byte array
 #[cfg(feature = "crc")]
 pub fn calc_ip_checksum(data: &[u8]) -> u16 {
@@ -94,24 +107,23 @@ pub fn calc_ip_checksum(data: &[u8]) -> u16 {
 
 
 /// Return blank checksum; real checksum must be calculated by hardware
-#[cfg(not(crc))]
+#[cfg(not(feature = "crc"))]
 pub fn calc_ip_checksum(data: &[u8]) -> u16 {
     0_u16
 }
 
 
 #[cfg(test)]
-#[macro_use]
-extern crate std;
-
-#[cfg(test)]
-#[cfg(feature = "crc")]
 mod tests {
+
+    #[macro_use]
+    extern crate std;
 
     use crate::{calc_ip_checksum, ip::IPV4Header};
 
     /// Test cyclic redundancy check following example from https://www.thegeekstuff.com/2012/05/ip-header-checksum/
     #[test]
+    #[cfg(feature = "crc")]
     fn test_calc_ip_checksum() -> () {
         // Sample header with pre-calculated checksum: 4500 003c 1c46 4000 4006 b1e6 ac10 0a63 ac10 0a0c
         let ipheader_example_16: &[u16; 10] = &[

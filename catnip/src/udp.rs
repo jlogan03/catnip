@@ -144,35 +144,3 @@ where
         bytes
     }
 }
-
-
-#[cfg(test)]
-mod test {
-    // use super::{UDPHeader, UDPPacket};
-
-    // #[test]
-    // fn test_udp_header() {
-    //     // Parse and replicate example header from https://www.khanacademy.org/computing/computers-and-internet/xcae6f4a7ff015e7d:the-internet/xcae6f4a7ff015e7d:transporting-packets/a/user-datagram-protocol-udp
-    //     let example_header: [u16; 4] = [
-    //         0b00010101_00001001,
-    //         0b0001010_100001001,
-    //         0b00000000_00000100,
-    //         0b10110100_11010000,
-    //     ];
-    //     let example_data: [u8; 4] = [0b01001000, 0b01101111, 0b01101100, 0b01100001];
-    //     // let mut example_u16: [u16; 4] = [0_u16; 4];
-    //     // for i in 0..4 {
-    //     //     let bytes: [u8; 2] = [example_bytes[2*i], example_bytes[2*i + 1]];
-    //     //     example_u16[i] = u16::from_be_bytes(bytes);
-    //     // }
-    //     let example_header: UDPHeader = UDPHeader {
-    //         value: example_header,
-    //     };
-    //     let example_packet: UDPPacket<0, 1> = UDPPacket {
-    //         ip_header: crate::ip::IPV4Header::new(),
-    //         udp_header: example_header,
-    //         udp_data: example_data,
-    //     };
-
-    // }
-}

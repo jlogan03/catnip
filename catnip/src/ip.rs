@@ -1,6 +1,6 @@
 //! Internet Protocol message header construction
 
-use crate::{calc_ip_checksum};
+use crate::{calc_ip_checksum, IPV4Addr};
 
 /// IPV4 header per IETF-RFC-791
 ///
@@ -250,16 +250,12 @@ where
     }
 }
 
-/// IPV4 Address as bytes
-#[derive(Clone, Copy, Debug)]
-pub struct IPV4Addr {
-    /// 4-byte IP address
-    pub value: [u8; 4],
-}
-
 /// Common choices of transport-layer protocols
+/// 
 /// and their IP header values.
+/// 
 /// There are many more protocols not listed here -
+/// 
 /// see https://en.wikipedia.org/wiki/List_of_IP_protocol_numbers
 #[derive(Clone, Copy, Debug)]
 pub enum Protocol {
@@ -279,6 +275,7 @@ pub enum Version {
 }
 
 /// https://en.wikipedia.org/wiki/Differentiated_services
+/// 
 /// Priority 2 is low-latency class
 #[derive(Clone, Copy, Debug)]
 pub enum DSCP {
