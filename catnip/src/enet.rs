@@ -107,7 +107,7 @@ impl EthernetHeader {
     }
 
     /// Parse fields from bytes
-    pub fn from_be_bytes(bytes: [u8; 14]) -> (MACAddr, MACAddr, EtherType) {
+    pub fn parse_be_bytes(bytes: [u8; 14]) -> (MACAddr, MACAddr, EtherType) {
         use EtherType::*;
 
         let mut src_macaddr = MACAddr{value: [0_u8; 6]};
@@ -275,8 +275,6 @@ where
             bytes[i] = v;
             i = i + 1;
         }
-
-        // assert_eq!(i, bytes.len());
 
         bytes
     }

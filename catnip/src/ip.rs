@@ -1,6 +1,5 @@
 //! Internet Protocol message header construction
 
-
 use crate::{calc_ip_checksum, IPV4Addr};
 
 /// IPV4 header per IETF-RFC-791
@@ -40,7 +39,8 @@ use crate::{calc_ip_checksum, IPV4Addr};
 /// N is number of 32-bit words to reserve for the Options section
 #[derive(Clone, Debug)]
 pub struct IPV4Header<const N: usize>
-where [u8; 4 * N + 20]:,
+where
+    [u8; 4 * N + 20]:,
 {
     /// The actual content of the header as bytes
     pub value: [u8; 4 * N + 20],
@@ -53,8 +53,11 @@ where
     /// Start from some sensible defaults
     pub fn new() -> Self {
         // Start a blank header and apply some sensible defaults
-        let mut header = IPV4Header { value: [0_u8; 4 * N + 20] };
-        header.version(Version::V4)
+        let mut header = IPV4Header {
+            value: [0_u8; 4 * N + 20],
+        };
+        header
+            .version(Version::V4)
             .header_length({ 5 + N } as u8)
             .dscp(DSCP::Standard)
             .ttl(100)
@@ -233,23 +236,63 @@ where
         self.value
     }
 
-    /// Parse from big-endian (network) byte array
-    pub fn from_be_bytes(bytes: &[u8; 4 * N + 20]) {
+    /// Parse (some) fields from big-endian (network) byte array
+    pub fn parse_be_bytes(
+        bytes: &[u8; 4 * N + 20],
+    ) -> (Version, Protocol, IPV4Addr, IPV4Addr, u8, u16, [u8; 4 * N]) {
         let version = match bytes[0] | 0b0000_1111 {
             4 => Version::V4,
             6 => Version::V6,
-            _ => Version::V4  // Default to IPV4 if the version field is invalid
+            _ => Version::V4, // Default to IPV4 if the version field is invalid
         };
 
+        let header_length: u8 = bytes[0] & 0b0000_1111;
+
+        let mut total_length_bytes = [0_u8; 2];
+        total_length_bytes.copy_from_slice(&bytes[2..4]);
+        let total_length: u16 = u16::from_be_bytes(total_length_bytes);
+
+        let mut src_ipaddr_bytes = [0_u8; 4];
+        src_ipaddr_bytes.copy_from_slice(&bytes[12..16]);
+        let src_ipaddr = IPV4Addr {
+            value: src_ipaddr_bytes,
+        };
+
+        let mut dst_ipaddr_bytes = [0_u8; 4];
+        dst_ipaddr_bytes.copy_from_slice(&bytes[16..20]);
+        let dst_ipaddr = IPV4Addr {
+            value: dst_ipaddr_bytes,
+        };
+
+        let protocol = match bytes[9] {
+            x if x == Protocol::TCP as u8 => Protocol::TCP,
+            x if x == Protocol::UDP as u8 => Protocol::UDP,
+            _ => Protocol::Unimplemented,
+        };
+
+        let mut options = [0_u8; 4 * N];
+        if N > 0 {
+            options.copy_from_slice(&bytes[20..4 * N + 20]);
+        }
+
+        return (
+            version,
+            protocol,
+            src_ipaddr,
+            dst_ipaddr,
+            header_length,
+            total_length,
+            options,
+        );
     }
 }
 
 /// Common choices of transport-layer protocols
-/// 
+///
 /// and their IP header values.
-/// 
+///
 /// There are many more protocols not listed here -
-/// 
+///
 /// see https://en.wikipedia.org/wiki/List_of_IP_protocol_numbers
 #[derive(Clone, Copy, Debug)]
 pub enum Protocol {
@@ -257,6 +300,8 @@ pub enum Protocol {
     TCP = 0x06,
     /// User Datagram Protocol
     UDP = 0x11,
+    /// Catch-all for unimplemented identifiers
+    Unimplemented = 0,
 }
 
 /// IP version bit mask
@@ -269,7 +314,7 @@ pub enum Version {
 }
 
 /// https://en.wikipedia.org/wiki/Differentiated_services
-/// 
+///
 /// Priority 2 is low-latency class
 #[derive(Clone, Copy, Debug)]
 pub enum DSCP {
