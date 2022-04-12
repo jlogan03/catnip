@@ -1,5 +1,6 @@
 //! Internet Protocol message header construction
 
+
 use crate::{calc_ip_checksum, IPV4Addr};
 
 /// IPV4 header per IETF-RFC-791
@@ -37,10 +38,9 @@ use crate::{calc_ip_checksum, IPV4Addr};
 /// value [16:19] Destination IP Address
 ///
 /// N is number of 32-bit words to reserve for the Options section
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct IPV4Header<const N: usize>
-where
-    [u8; 4 * N + 20]:,
+where [u8; 4 * N + 20]:,
 {
     /// The actual content of the header as bytes
     pub value: [u8; 4 * N + 20],
@@ -53,20 +53,14 @@ where
     /// Start from some sensible defaults
     pub fn new() -> Self {
         // Start a blank header and apply some sensible defaults
-        let header = IPV4Header { value: [0_u8; 4 * N + 20] }
-            .version(Version::V4)
+        let mut header = IPV4Header { value: [0_u8; 4 * N + 20] };
+        header.version(Version::V4)
             .header_length({ 5 + N } as u8)
             .dscp(DSCP::Standard)
             .ttl(100)
-            .protocol(Protocol::UDP)
-            .finalize();
+            .protocol(Protocol::UDP);
 
         header
-    }
-
-    /// Dereference to prevent droppage
-    pub fn finalize(&mut self) -> Self {
-        *self
     }
 
     /// Set version

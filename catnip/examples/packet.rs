@@ -1,9 +1,9 @@
 //! Build a UDP/IP Ethernet packet and get its representation as network bytes
 
 use catnip::enet::{EtherType, EthernetFrameUDP, EthernetHeader, EthernetPacketUDP};
-use catnip::ip::{IPV4Addr, IPV4Header, DSCP};
+use catnip::ip::{IPV4Header, DSCP};
 use catnip::udp::{UDPHeader, UDPPacket};
-use catnip::{Data, MACAddr};
+use catnip::{Data, IPV4Addr, MACAddr};
 extern crate std; // To show debugging output
 
 fn main() -> () {
@@ -34,11 +34,11 @@ fn main() -> () {
     // Build IP header with no Options section
     // Header length is populated in new()
     // Total length is populated by UDPPacket.finalize()
-    let ipheader: IPV4Header<0> = IPV4Header::new()
+    let mut ipheader: IPV4Header<0> = IPV4Header::new();
+    ipheader
         .src_ipaddr(src_ipaddr)
         .dst_ipaddr(dst_ipaddr)
-        .dscp(DSCP::Realtime)
-        .finalize();
+        .dscp(DSCP::Realtime);
     println!("{:?}", &ipheader);
     println!("{:?}\n", &ipheader.to_be_bytes());
 

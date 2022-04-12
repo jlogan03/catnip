@@ -1,5 +1,7 @@
 //! User Datagram Protocol
 
+#![feature(generic_const_exprs)]
+
 use crate::ip::IPV4Header;
 use crate::{calc_ip_checksum, Data};
 
@@ -56,11 +58,12 @@ impl UDPHeader {
 /// N is size of IP Options in 32-bit words
 ///
 /// M is size of UDP Data in 32-bit words
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct UDPPacket<const N: usize, const M: usize>
 where
-    [u8; 4 * N + 20]:,
+    // [u8; 4 * N + 20]:,
     [u8; 4 * M]:,
+    [u8; 4 * N + 20]:,
 {
     /// IPV4 packet header
     pub ip_header: IPV4Header<N>,
@@ -107,7 +110,7 @@ where
 
         // Set UDP packet length in bytes
         udppacket.udp_header.value[2] =
-            (udp_data.len() + udp_header.len()) as u16;
+            (&udppacket.udp_data.len() + udp_header.len()) as u16;
 
         // Zero-out UDP checksum because it is redundant with ethernet checksum & prone to overflow
         udppacket.udp_header.value[3] = 0;

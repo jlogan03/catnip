@@ -45,7 +45,7 @@ pub struct IPV4Addr {
 }
 
 /// IP and UDP require their data to be a multiple of 4 bytes (32-bit words)
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 #[repr(transparent)]
 pub struct Data<const Q: usize> where [u8; 4 * Q]:, {
     /// Byte array of data
@@ -66,6 +66,7 @@ impl<const Q: usize> Data<Q> where [u8; 4 * Q]:,  {
         self.value
     }
 }
+
 
 /// Calculate IP checksum per IETF-RFC-768
 /// 
@@ -116,8 +117,8 @@ pub fn calc_ip_checksum(data: &[u8]) -> u16 {
 #[cfg(test)]
 mod tests {
 
-    #[macro_use]
     extern crate std;
+    use std::println;
 
     use crate::{calc_ip_checksum, ip::IPV4Header};
 
@@ -162,7 +163,7 @@ mod tests {
             0x0a63_u16, 0xac10_u16, 0x0a0c_u16, 0x0F00_u16, 0_u16,
         ];
         let mut header: IPV4Header<1> = IPV4Header::<1>::from_16bit_words(&ipheader_16_extended);
-        header = header.header_checksum().finalize(); // Apply checksum value
+        header.header_checksum(); // Apply checksum value
         let cyclic_check = calc_ip_checksum(&header.value);
         assert_eq!(cyclic_check, 0_u16);
     }

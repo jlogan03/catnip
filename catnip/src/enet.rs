@@ -4,7 +4,9 @@
 
 use crate::{udp::UDPPacket, MACAddr};
 
-/// Combined preamble and start-frame delimiter because they are never changed or separated
+/// Combined 7-byte preamble and 1-byte start-frame delimiter because they are never changed or separated
+/// 
+/// These are usually supplied by the hardware
 const PREAMBLE: [u8; 8] = [
     0b1010_1010,
     0b1010_1010,
@@ -17,6 +19,8 @@ const PREAMBLE: [u8; 8] = [
 ];
 
 /// Standard 96-bit inter-packet gap
+/// 
+/// This is usually supplied by the hardware
 const IPG: [u8; 12] = [0; 12];
 
 /// Header for Ethernet II frame like
@@ -101,6 +105,32 @@ impl EthernetHeader {
     pub fn to_be_bytes(&self) -> [u8; 14] {
         self.value
     }
+
+    /// Parse fields from bytes
+    pub fn from_be_bytes(bytes: [u8; 14]) -> (MACAddr, MACAddr, EtherType) {
+        use EtherType::*;
+
+        let mut src_macaddr = MACAddr{value: [0_u8; 6]};
+        src_macaddr.value.copy_from_slice(&bytes[0..6]);
+
+        let mut dst_macaddr = MACAddr{value: [0_u8; 6]};
+        dst_macaddr.value.copy_from_slice(&bytes[5..11]);
+
+        let mut ethertype_bytes = [0_u8; 2];
+        ethertype_bytes.copy_from_slice(&bytes[10..12]);
+        let ethertype_int = u16::from_be_bytes(ethertype_bytes);
+        let ethertype = match ethertype_int {
+            x if x == (IPV4 as u16) => IPV4,
+            x if x == (ARP as u16) => ARP,
+            x if x == (VLAN as u16) => VLAN,
+            x if x == (IPV6 as u16) => IPV6,
+            x if x == (EtherCat as u16) => EtherCat,
+            x if x == (PTP as u16) => PTP,
+            _ => Unimplemented
+        };
+
+        return (src_macaddr, dst_macaddr, ethertype)
+    }
 }
 
 /// Ethernet II frame (variable parts of a packet)
@@ -162,6 +192,12 @@ where
 }
 
 /// Ethernet II packet (including preamble, start-frame delimiter, and interpacket gap)
+/// 
+/// A hardware MAC usually takes the frame as an input and builds a packet from it, so
+/// 
+/// this exercise of building the actual packet from a frame is somewhat academic, but useful for testing
+/// 
+/// and for estimating network utilization
 #[derive(Clone, Debug)]
 pub struct EthernetPacketUDP<const N: usize, const M: usize>
 where
@@ -196,7 +232,7 @@ where
     /// Calculate ethernet checksum in software
     #[cfg(feature = "crc")]
     pub fn calc_enet_checksum(&self, frame_bytes: &[u8; (4 * N + 20) + (4 * M) + 14 + 8]) -> u32 {
-        let checksum: u32 = crc32fast::hash(&frame_bytes);
+        let checksum: u32 = crc32fast::hash(frame_bytes);
         checksum
     }
 
@@ -250,6 +286,7 @@ where
 ///
 /// See https://en.wikipedia.org/wiki/EtherType
 #[derive(Clone, Copy, Debug)]
+#[repr(u16)]
 pub enum EtherType {
     /// IPV4
     IPV4 = 0x0800,
@@ -263,4 +300,6 @@ pub enum EtherType {
     EtherCat = 0x88A4,
     /// Precision Time Protocol
     PTP = 0x88A7,
+    /// Catch-all for uncommon types not handled here
+    Unimplemented = 0
 }
