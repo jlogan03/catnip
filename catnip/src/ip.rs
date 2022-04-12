@@ -235,56 +235,56 @@ where
     pub fn to_be_bytes(&self) -> [u8; 4 * N + 20] {
         self.value
     }
+}
 
-    /// Parse (some) fields from big-endian (network) byte array
-    pub fn parse_be_bytes(
-        bytes: &[u8; 4 * N + 20],
-    ) -> (Version, Protocol, IPV4Addr, IPV4Addr, u8, u16, [u8; 4 * N]) {
-        let version = match bytes[0] | 0b0000_1111 {
-            4 => Version::V4,
-            6 => Version::V6,
-            _ => Version::V4, // Default to IPV4 if the version field is invalid
-        };
+/// Parse (some) fields from big-endian (network) byte array
+pub fn parse_be_bytes<const N: usize>(
+    bytes: &[u8; 4 * N + 20],
+) -> (Version, Protocol, IPV4Addr, IPV4Addr, u8, u16, [u8; 4 * N]) {
+    let version = match bytes[0] | 0b0000_1111 {
+        4 => Version::V4,
+        6 => Version::V6,
+        _ => Version::V4, // Default to IPV4 if the version field is invalid
+    };
 
-        let header_length: u8 = bytes[0] & 0b0000_1111;
+    let header_length: u8 = bytes[0] & 0b0000_1111;
 
-        let mut total_length_bytes = [0_u8; 2];
-        total_length_bytes.copy_from_slice(&bytes[2..4]);
-        let total_length: u16 = u16::from_be_bytes(total_length_bytes);
+    let mut total_length_bytes = [0_u8; 2];
+    total_length_bytes.copy_from_slice(&bytes[2..4]);
+    let total_length: u16 = u16::from_be_bytes(total_length_bytes);
 
-        let mut src_ipaddr_bytes = [0_u8; 4];
-        src_ipaddr_bytes.copy_from_slice(&bytes[12..16]);
-        let src_ipaddr = IPV4Addr {
-            value: src_ipaddr_bytes,
-        };
+    let mut src_ipaddr_bytes = [0_u8; 4];
+    src_ipaddr_bytes.copy_from_slice(&bytes[12..16]);
+    let src_ipaddr = IPV4Addr {
+        value: src_ipaddr_bytes,
+    };
 
-        let mut dst_ipaddr_bytes = [0_u8; 4];
-        dst_ipaddr_bytes.copy_from_slice(&bytes[16..20]);
-        let dst_ipaddr = IPV4Addr {
-            value: dst_ipaddr_bytes,
-        };
+    let mut dst_ipaddr_bytes = [0_u8; 4];
+    dst_ipaddr_bytes.copy_from_slice(&bytes[16..20]);
+    let dst_ipaddr = IPV4Addr {
+        value: dst_ipaddr_bytes,
+    };
 
-        let protocol = match bytes[9] {
-            x if x == Protocol::TCP as u8 => Protocol::TCP,
-            x if x == Protocol::UDP as u8 => Protocol::UDP,
-            _ => Protocol::Unimplemented,
-        };
+    let protocol = match bytes[9] {
+        x if x == Protocol::TCP as u8 => Protocol::TCP,
+        x if x == Protocol::UDP as u8 => Protocol::UDP,
+        _ => Protocol::Unimplemented,
+    };
 
-        let mut options = [0_u8; 4 * N];
-        if N > 0 {
-            options.copy_from_slice(&bytes[20..4 * N + 20]);
-        }
-
-        return (
-            version,
-            protocol,
-            src_ipaddr,
-            dst_ipaddr,
-            header_length,
-            total_length,
-            options,
-        );
+    let mut options = [0_u8; 4 * N];
+    if N > 0 {
+        options.copy_from_slice(&bytes[20..4 * N + 20]);
     }
+
+    return (
+        version,
+        protocol,
+        src_ipaddr,
+        dst_ipaddr,
+        header_length,
+        total_length,
+        options,
+    );
 }
 
 /// Common choices of transport-layer protocols
