@@ -105,37 +105,44 @@ impl EthernetHeader {
     pub fn to_be_bytes(&self) -> [u8; 14] {
         self.value
     }
-
-    /// Parse fields from bytes
-    pub fn parse_be_bytes(bytes: [u8; 14]) -> (MACAddr, MACAddr, EtherType) {
-        use EtherType::*;
-
-        let mut src_macaddr = MACAddr{value: [0_u8; 6]};
-        src_macaddr.value.copy_from_slice(&bytes[0..6]);
-
-        let mut dst_macaddr = MACAddr{value: [0_u8; 6]};
-        dst_macaddr.value.copy_from_slice(&bytes[5..11]);
-
-        let mut ethertype_bytes = [0_u8; 2];
-        ethertype_bytes.copy_from_slice(&bytes[10..12]);
-        let ethertype_int = u16::from_be_bytes(ethertype_bytes);
-        let ethertype = match ethertype_int {
-            x if x == (IPV4 as u16) => IPV4,
-            x if x == (ARP as u16) => ARP,
-            x if x == (VLAN as u16) => VLAN,
-            x if x == (IPV6 as u16) => IPV6,
-            x if x == (EtherCat as u16) => EtherCat,
-            x if x == (PTP as u16) => PTP,
-            _ => Unimplemented
-        };
-
-        return (src_macaddr, dst_macaddr, ethertype)
-    }
 }
 
-/// Ethernet II frame (variable parts of a packet)
+
+/// Parse fields from bytes
+pub fn parse_header_bytes(bytes: [u8; 14]) -> (MACAddr, MACAddr, EtherType) {
+    use EtherType::*;
+
+    let mut src_macaddr = MACAddr{value: [0_u8; 6]};
+    src_macaddr.value.copy_from_slice(&bytes[0..6]);
+
+    let mut dst_macaddr = MACAddr{value: [0_u8; 6]};
+    dst_macaddr.value.copy_from_slice(&bytes[5..11]);
+
+    let mut ethertype_bytes = [0_u8; 2];
+    ethertype_bytes.copy_from_slice(&bytes[10..12]);
+    let ethertype_int = u16::from_be_bytes(ethertype_bytes);
+    let ethertype = match ethertype_int {
+        x if x == (IPV4 as u16) => IPV4,
+        x if x == (ARP as u16) => ARP,
+        x if x == (VLAN as u16) => VLAN,
+        x if x == (IPV6 as u16) => IPV6,
+        x if x == (EtherCat as u16) => EtherCat,
+        x if x == (PTP as u16) => PTP,
+        _ => Unimplemented
+    };
+
+    return (src_macaddr, dst_macaddr, ethertype)
+}
+
+/// Ethernet II frame containing a UDP packet. 
+/// 
+/// When const generic expressions are more stable, this will be able to generalize
+/// 
+/// to contain any kind of packet that can be reduced to a multiple of 4 bytes.
 ///
-/// P is length of data's byte representation
+/// N is size of IP Options in 32-bit words.
+///
+/// M is size of UDP Data in 32-bit words.
 #[derive(Clone, Debug)]
 pub struct EthernetFrameUDP<const N: usize, const M: usize>
 where
@@ -144,7 +151,7 @@ where
 {
     /// Ethernet frame header
     pub header: EthernetHeader,
-    /// Ethernet payload (likely some kind of IP packet)
+    /// Ethernet payload (only a UDP packet, for now)
     pub payload: UDPPacket<N, M>,
 }
 
@@ -185,8 +192,6 @@ where
             i = i + 1;
         }
 
-        // assert_eq!(i, bytes.len());
-
         bytes
     }
 }
@@ -197,7 +202,7 @@ where
 /// 
 /// this exercise of building the actual packet from a frame is somewhat academic, but useful for testing
 /// 
-/// and for estimating network utilization
+/// and for estimating network utilization.
 #[derive(Clone, Debug)]
 pub struct EthernetPacketUDP<const N: usize, const M: usize>
 where

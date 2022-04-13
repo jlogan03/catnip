@@ -52,12 +52,22 @@ impl UDPHeader {
     }
 }
 
+/// Parse a UDP header from bytes
+pub fn parse_header_bytes(bytes: &[u8; 8]) -> (u16, u16, u16, u16) {
+    let src_port = u16::from_be_bytes([bytes[0], bytes[1]]);
+    let dst_port = u16::from_be_bytes([bytes[2], bytes[3]]);
+    let total_length = u16::from_be_bytes([bytes[4], bytes[5]]);
+    let checksum = u16::from_be_bytes([bytes[6], bytes[7]]);
 
-/// IP message frame for UDP protocol
+    (src_port, dst_port, total_length, checksum)
+}
+
+
+/// IPV4 message frame for UDP protocol.
 ///
-/// N is size of IP Options in 32-bit words
+/// N is size of IP Options in 32-bit words.
 ///
-/// M is size of UDP Data in 32-bit words
+/// M is size of UDP Data in 32-bit words.
 #[derive(Clone, Debug)]
 pub struct UDPPacket<const N: usize, const M: usize>
 where
@@ -80,11 +90,11 @@ where
     [u8; 4 * N + 20 + 4 * M + 8]:, // Required for Transportable trait
     // UDPPacket<'a, N, M>: Transportable<{ 4 * N + 20 + 4 * M + 8 }>,
 {
-    /// Build a UDP packet and populate the components that depend on the combined data
+    /// Build a UDP packet and populate the components that depend on the combined data.
     ///
-    /// N is size of IP Options in 32-bit words
+    /// N is size of IP Options in 32-bit words.
     ///
-    /// M is size of UDP Data in 32-bit words
+    /// M is size of UDP Data in 32-bit words.
     pub fn new(
         ip_header: IPV4Header<N>,
         udp_header: UDPHeader,
@@ -147,3 +157,12 @@ where
         bytes
     }
 }
+
+// Attempt to parse UDP packet components from bytes
+// pub fn parse_packet_bytes(bytes: &[u8]) {
+//     let p = bytes.len();
+//     let mut 
+//     if p > 20 {
+        
+//     }
+// }
