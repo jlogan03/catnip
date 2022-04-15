@@ -1,9 +1,7 @@
 //! User Datagram Protocol
 
-#![feature(generic_const_exprs)]
-
-use crate::ip::IPV4Header;
-use crate::{calc_ip_checksum, Data};
+use crate::ip::{self, IPV4Header, Protocol, Version};
+use crate::{calc_ip_checksum, Data, IPV4Addr};
 
 /// UDP datagram header structure like
 ///
@@ -62,7 +60,6 @@ pub fn parse_header_bytes(bytes: &[u8; 8]) -> (u16, u16, u16, u16) {
     (src_port, dst_port, total_length, checksum)
 }
 
-
 /// IPV4 message frame for UDP protocol.
 ///
 /// N is size of IP Options in 32-bit words.
@@ -88,7 +85,7 @@ where
     [u8; 4 * M]:,
     [u8; 4 * N + 20]:,
     [u8; 4 * N + 20 + 4 * M + 8]:, // Required for Transportable trait
-    // UDPPacket<'a, N, M>: Transportable<{ 4 * N + 20 + 4 * M + 8 }>,
+                                   // UDPPacket<'a, N, M>: Transportable<{ 4 * N + 20 + 4 * M + 8 }>,
 {
     /// Build a UDP packet and populate the components that depend on the combined data.
     ///
@@ -100,6 +97,7 @@ where
         udp_header: UDPHeader,
         udp_data: Data<M>,
     ) -> UDPPacket<N, M> {
+
         let mut udppacket: UDPPacket<N, M> = UDPPacket::<N, M> {
             ip_header: ip_header,
             udp_header: udp_header,
@@ -107,7 +105,7 @@ where
         };
 
         // Set IP frame length
-        let ip_length: u16 = udppacket.len() as u16;
+        let ip_length: u16 = (4 * N + 20 + 4 * M + 8) as u16;
         let ip_length_bytes: [u8; 2] = ip_length.to_be_bytes();
         udppacket.ip_header.value[2] = ip_length_bytes[0];
         udppacket.ip_header.value[3] = ip_length_bytes[1];
@@ -119,8 +117,7 @@ where
         udppacket.ip_header.value[11] = checksum_bytes[1];
 
         // Set UDP packet length in bytes
-        udppacket.udp_header.value[2] =
-            (&udppacket.udp_data.len() + udp_header.len()) as u16;
+        udppacket.udp_header.value[2] = (&udppacket.udp_data.len() + udp_header.len()) as u16;
 
         // Zero-out UDP checksum because it is redundant with ethernet checksum & prone to overflow
         udppacket.udp_header.value[3] = 0;
@@ -158,11 +155,94 @@ where
     }
 }
 
-// Attempt to parse UDP packet components from bytes
-// pub fn parse_packet_bytes(bytes: &[u8]) {
-//     let p = bytes.len();
-//     let mut 
-//     if p > 20 {
-        
-//     }
-// }
+/// Attempt to parse and IPV4 UDP packet components from bytes.
+///
+/// Checks if this is, in fact, an IPV4 UDP packet and will error otherwise.
+pub fn parse_packet_bytes(
+    bytes: &[u8],
+) -> Result<
+    (
+        &[u8],
+        &[u8],
+        IPV4Addr,
+        u16,
+        IPV4Addr,
+        u16,
+        Version,
+        Protocol,
+        u16,
+        u16,
+    ),
+    &str,
+> {
+    let p = bytes.len();
+
+    // Check if there is enough data for an IP header
+    if p < 20 {
+        return Err("Inadequate data for IP header");
+    };
+
+    // Parse the IP header assuming there are no options bytes, then check listed header length
+    let mut header_bytes = [0_u8; 20];
+    header_bytes.copy_from_slice(&bytes[0..20]);
+
+    let (
+        version,
+        protocol,
+        src_ipaddr,
+        dst_ipaddr,
+        header_length,
+        total_length,
+        _, // assume no Options for now
+        identification,
+    ) = ip::parse_header_bytes::<0>(&header_bytes);
+
+    let header_length = header_length as usize * 4;  // Convert to bytes from words
+
+    // Make sure the length field matches reality
+    if p != total_length as usize {
+        return Err("Packet length does not match total length");
+    };
+
+    // If there is an IP Options segment, parse it as a chunk but do not interpret
+    let options: &[u8];
+    if p < header_length as usize {
+        // Do we have enough for the full header including Options?
+        return Err("IP header length exceeds data size");
+    } else {
+        options = &bytes[20..header_length as usize] // May be zero-size
+    }
+
+    // Check what protocol defines the structure of the payload
+    match protocol {
+        Protocol::UDP => (),
+        _ => return Err("Unimplemented protocol"), // Other protocols not implemented
+    };
+
+    // Check IP version
+    match version {
+        Version::V4 => (),
+        _ => return Err("Unimplemented IP version"), // IPV6 not implemented yet
+    };
+
+    // This is an IPV4 UDP packet
+    // Slice the UDP portion
+    let bytes = &bytes[header_length as usize..];
+    let p = bytes.len();
+
+    // Parse the UDP header
+    if p < 8 {
+        // Make sure there is at least a full header worth of data left
+        return Err("Inadequate data for UDP header");
+    }
+    let mut header_bytes = [0_u8; 8];
+    header_bytes.copy_from_slice(&bytes[0..8]);
+    let (src_port, dst_port, _, checksum) = parse_header_bytes(&header_bytes);
+
+    // Extract UDP data
+    let data = &bytes[9..];
+
+    Ok((
+        data, options, src_ipaddr, src_port, dst_ipaddr, dst_port, version, protocol, checksum, identification
+    ))
+}

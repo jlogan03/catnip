@@ -6,12 +6,15 @@
 #![feature(generic_const_exprs)]
 #![feature(test)]
 
-#[cfg(release)]
-extern crate panic_never;
+#[cfg(feature = "panic_never")]
+use panic_never as _;
 
 pub mod enet; // Link Layer
 pub mod ip; // Internet layer
 pub mod udp; // Transport layer
+
+pub use enet::EtherType;
+pub use ip::{Version, Protocol, DSCP, Flags};
 
 // All protocols' headers, data, and frames must be able to convert to byte array
 // in order to be consumed by EMAC/PHY drivers for transmission

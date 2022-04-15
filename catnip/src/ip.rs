@@ -238,13 +238,13 @@ where
 }
 
 /// Parse (some) fields from big-endian (network) byte array
-pub fn parse_be_bytes<const N: usize>(
+pub fn parse_header_bytes<const N: usize>(
     bytes: &[u8; 4 * N + 20],
-) -> (Version, Protocol, IPV4Addr, IPV4Addr, u8, u16, [u8; 4 * N]) {
-    let version = match bytes[0] | 0b0000_1111 {
-        4 => Version::V4,
-        6 => Version::V6,
-        _ => Version::V4, // Default to IPV4 if the version field is invalid
+) -> (Version, Protocol, IPV4Addr, IPV4Addr, u8, u16, [u8; 4 * N], u16) {
+    let version = match bytes[0] & 0b1111_0000 {
+        x if x == Version::V4 as u8 => Version::V4,
+        x if x == Version::V6 as u8 => Version::V6,
+        _ => Version::Unimplemented, // Default to IPV4 if the version field is invalid
     };
 
     let header_length: u8 = bytes[0] & 0b0000_1111;
@@ -271,6 +271,11 @@ pub fn parse_be_bytes<const N: usize>(
         _ => Protocol::Unimplemented,
     };
 
+    let mut identification_bytes = [0_u8; 2];
+    identification_bytes.copy_from_slice(&bytes[4..6]);
+    let identification = u16::from_be_bytes(identification_bytes);
+
+
     let mut options = [0_u8; 4 * N];
     if N > 0 {
         options.copy_from_slice(&bytes[20..4 * N + 20]);
@@ -284,6 +289,7 @@ pub fn parse_be_bytes<const N: usize>(
         header_length,
         total_length,
         options,
+        identification,
     );
 }
 
@@ -311,6 +317,8 @@ pub enum Version {
     V4 = 0b0100_0000,
     /// IPV6
     V6 = 0b0110_0000,
+    /// Unimplemented
+    Unimplemented = 0
 }
 
 /// https://en.wikipedia.org/wiki/Differentiated_services

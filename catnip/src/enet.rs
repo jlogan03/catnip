@@ -73,7 +73,7 @@ impl EthernetHeader {
     /// Set destination mac address
     pub fn dst_macaddr(&mut self, v: &[u8; 6]) -> &mut Self {
         for i in 0..6 {
-            self.value[i + 5] = v[i];
+            self.value[i + 6] = v[i];
         }
 
         self
@@ -109,17 +109,17 @@ impl EthernetHeader {
 
 
 /// Parse fields from bytes
-pub fn parse_header_bytes(bytes: [u8; 14]) -> (MACAddr, MACAddr, EtherType) {
+pub fn parse_header_bytes(bytes: &[u8; 14]) -> (MACAddr, MACAddr, EtherType) {
     use EtherType::*;
 
     let mut src_macaddr = MACAddr{value: [0_u8; 6]};
     src_macaddr.value.copy_from_slice(&bytes[0..6]);
 
     let mut dst_macaddr = MACAddr{value: [0_u8; 6]};
-    dst_macaddr.value.copy_from_slice(&bytes[5..11]);
+    dst_macaddr.value.copy_from_slice(&bytes[6..12]);
 
     let mut ethertype_bytes = [0_u8; 2];
-    ethertype_bytes.copy_from_slice(&bytes[10..12]);
+    ethertype_bytes.copy_from_slice(&bytes[12..14]);
     let ethertype_int = u16::from_be_bytes(ethertype_bytes);
     let ethertype = match ethertype_int {
         x if x == (IPV4 as u16) => IPV4,
