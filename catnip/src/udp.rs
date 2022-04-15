@@ -240,7 +240,7 @@ pub fn parse_packet_bytes(
     let (src_port, dst_port, _, checksum) = parse_header_bytes(&header_bytes);
 
     // Extract UDP data
-    let data = &bytes[9..];
+    let data = &bytes[8..];
 
     Ok((
         data, options, src_ipaddr, src_port, dst_ipaddr, dst_port, version, protocol, checksum, identification

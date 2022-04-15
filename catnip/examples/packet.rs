@@ -5,7 +5,7 @@ use catnip::enet::{
 };
 use catnip::ip::IPV4Header;
 use catnip::udp::{parse_packet_bytes, UDPHeader, UDPPacket};
-use catnip::{Data, IPV4Addr, MACAddr, Version, DSCP};
+use catnip::{Data, IPV4Addr, MACAddr, Version, DSCP, Protocol};
 // extern crate std; // To show debugging output
 
 fn main() -> () {
@@ -111,10 +111,20 @@ dst_ipaddr: {dst_ipaddr_parsed:?}
 dst_port: {dst_port_parsed:?}
 version: {version_parsed:?}
 protocol: {protocol_parsed:?}
-checksum: {checksum_parsed:?}
+UDP checksum: {checksum_parsed:?}
 identification: {identification_parsed:?}
             "
             );
+            assert_eq!([0, 1, 2, 3, 4, 5, 6, 7], data_parsed);
+            assert_eq!([0_u8; 0], options_parsed);
+            assert_eq!(src_ipaddr.value, src_ipaddr_parsed.value);
+            assert_eq!(src_port, src_port_parsed);
+            assert_eq!(dst_ipaddr.value, dst_ipaddr_parsed.value);
+            assert_eq!(dst_port, dst_port_parsed);
+            assert_eq!(Version::V4 as u8, version_parsed as u8);
+            assert_eq!(Protocol::UDP as u8, protocol_parsed as u8);
+            assert_eq!(0, checksum_parsed);
+            assert_eq!(0, identification_parsed);
         }
         Err(x) => {
             println!("Failed to parse UDP packet: {x}")
