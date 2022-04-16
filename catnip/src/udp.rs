@@ -1,4 +1,4 @@
-//! User Datagram Protocol
+//! Transport layer: User Datagram Protocol
 
 use crate::ip::{self, IPV4Header, Protocol, Version};
 use crate::{calc_ip_checksum, Data, IPV4Addr};

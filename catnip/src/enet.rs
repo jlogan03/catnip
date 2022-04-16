@@ -1,8 +1,11 @@
-//! Ethernet II protocol per IEEE 802.3
+//! Link layer: Ethernet II protocol per IEEE 802.3
 //! 
 //! Diagram at https://en.wikipedia.org/wiki/Ethernet_frame#Ethernet_II
 
 use crate::{udp::UDPPacket, MACAddr};
+
+#[cfg(feature = "crc")]
+use crc32fast;
 
 /// Combined 7-byte preamble and 1-byte start-frame delimiter because they are never changed or separated
 /// 

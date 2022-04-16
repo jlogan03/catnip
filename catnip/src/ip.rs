@@ -1,8 +1,10 @@
-//! Internet Protocol message header construction
+//! Internet layer: Internet Protocol message header construction
 
 use crate::{calc_ip_checksum, IPV4Addr};
 
 /// IPV4 header per IETF-RFC-791
+/// 
+/// N is number of 32-bit words to reserve for the Options section
 ///
 /// https://en.wikipedia.org/wiki/IPv4
 ///
@@ -35,8 +37,6 @@ use crate::{calc_ip_checksum, IPV4Addr};
 /// fifth 32-bit word
 ///
 /// value [16:19] Destination IP Address
-///
-/// N is number of 32-bit words to reserve for the Options section
 #[derive(Clone, Debug)]
 pub struct IPV4Header<const N: usize>
 where
