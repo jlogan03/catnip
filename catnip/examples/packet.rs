@@ -103,16 +103,16 @@ fn main() -> () {
             ) = x;
             println!(
                 "
-data: {data_parsed:?}
-options: {options_parsed:?}
-src_ipaddr: {src_ipaddr_parsed:?}
-src_port: {src_port_parsed:?}
-dst_ipaddr: {dst_ipaddr_parsed:?}
-dst_port: {dst_port_parsed:?}
-version: {version_parsed:?}
-protocol: {protocol_parsed:?}
-UDP checksum: {checksum_parsed:?}
-identification: {identification_parsed:?}
+                data: {data_parsed:?}
+                options: {options_parsed:?}
+                src_ipaddr: {src_ipaddr_parsed:?}
+                src_port: {src_port_parsed:?}
+                dst_ipaddr: {dst_ipaddr_parsed:?}
+                dst_port: {dst_port_parsed:?}
+                version: {version_parsed:?}
+                protocol: {protocol_parsed:?}
+                UDP checksum: {checksum_parsed:?}
+                identification: {identification_parsed:?}
             "
             );
             assert_eq!([0, 1, 2, 3, 4, 5, 6, 7], data_parsed);
