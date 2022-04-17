@@ -18,7 +18,7 @@ be implemented and I'm sure some bugs are yet to be found.
 * Ethernet II 802.3 frames
 * IPV4
 * UDP
-* Optional software 
+* Optional software-side calculation of checksums
 
 # To-do
 * Add UDP psuedo-socket trait w/ arbitrary async send/receive functions
