@@ -15,7 +15,7 @@ This library is under active development; major functionality is yet to
 be implemented and I'm sure some bugs are yet to be found.
 
 # Features 
-* Ethernet II 802.3 frames
+* Ethernet II frames
 * IPV4
 * UDP
 * Optional software-side calculation of checksums
