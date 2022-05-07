@@ -23,4 +23,5 @@ be implemented and I'm sure some bugs are yet to be found.
 # To-do
 * Add UDP psuedo-socket trait w/ arbitrary async send/receive functions
 * Implement IPV6
+* Implement 802.1Q VLAN
 * Update with more general structure once const generic exprs are more stable
