@@ -12,6 +12,7 @@ use panic_never as _;
 pub mod enet; // Link Layer
 pub mod ip; // Internet layer
 pub mod udp; // Transport layer
+pub mod arp; // Address Resolution Protocol - not a distinct layer, but required for IP and UDP to function on most networks
 
 pub use enet::EtherType;
 pub use ip::{Version, Protocol, DSCP, Flags};

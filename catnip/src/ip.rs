@@ -69,7 +69,7 @@ where
     /// Set version
     pub fn version(&mut self, v: Version) -> &mut Self {
         self.value[0] = self.value[0] & 0b0000_1111; // Clear existing
-        self.value[0] = self.value[0] | v as u8; // Apply new
+        self.value[0] = self.value[0] | ((v as u8) << 4); // Apply new
         self
     }
 
@@ -314,9 +314,9 @@ pub enum Protocol {
 #[derive(Clone, Copy, Debug)]
 pub enum Version {
     /// IPV4
-    V4 = 0b0100_0000,
+    V4 = 4 << 4,
     /// IPV6
-    V6 = 0b0110_0000,
+    V6 = 6 << 4,
     /// Unimplemented
     Unimplemented = 0
 }
