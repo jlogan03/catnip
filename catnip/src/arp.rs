@@ -19,14 +19,14 @@
 //! that address to itself. The success of that method requires that all devices on the network be configured to respond to ARP requests,
 //! which is not necessarily the case.
 
-use crate::{enet, EtherType, IPV4Addr, MACAddr};
+use crate::{EtherType, IPV4Addr, MACAddr};
 
 /// An ARP request or response with IPV4 addresses.
-///
-/// https://en.wikipedia.org/wiki/Address_Resolution_Protocol
-///
 /// Assumes 6-byte standard MAC addresses and 4-byte IPV4 addresses.
-pub fn build_arp_message_ipv4(
+/// See https://en.wikipedia.org/wiki/Address_Resolution_Protocol .
+///
+/// Hardware type is 1 for ethernet.
+pub fn build_arp_msg_ipv4(
     htype: u16,
     ptype: EtherType,
     operation: ARPOperation,
@@ -36,39 +36,81 @@ pub fn build_arp_message_ipv4(
     tpa: IPV4Addr,
 ) -> [u8; 28] {
     let mut msg = [0_u8; 28];
-    
+
+    // Hardware type (ethernet, etc each have a numerical code)
     let htypeparts = htype.to_be_bytes();
     msg[0] = htypeparts[0];
     msg[1] = htypeparts[1];
-
+    // Protocol type
     let ptypeparts = (ptype as u16).to_be_bytes();
     msg[2] = ptypeparts[0];
     msg[3] = ptypeparts[1];
-
-    msg[4] = 6_u8;  // 6-byte MAC address lengths
-    msg[5] = 4_u8;  // 4-byte protocol address lengths
-
+    // Assumptions
+    msg[4] = 6_u8; // 6-byte MAC address lengths
+    msg[5] = 4_u8; // 4-byte protocol address lengths
+                   // Operation type (request or response)
     let opparts = (operation as u16).to_be_bytes();
     msg[6] = opparts[0];
     msg[7] = opparts[1];
-
+    // Sender hardware address
     for i in 0..6 {
         msg[8 + i] = sha.value[i];
     }
-
+    // Sender protocol address
     for i in 0..4 {
         msg[14 + i] = spa.value[i];
     }
-
+    // Target hardware address (all zeros for request)
     for i in 0..6 {
         msg[20 + i] = tha.value[i];
     }
-
+    // Target protocol address (what IP address are we trying to resolve?)
     for i in 0..4 {
         msg[24 + i] = tpa.value[i]
     }
 
     msg
+}
+
+/// Attempt to parse an ARP message from a slice.
+/// Assumes 6-byte standard MAC addresses and 4-byte IPV4 addresses.
+pub fn parse_arp_msg(
+    msg: &[u8],
+) -> Result<
+    (
+        u16,
+        EtherType,
+        ARPOperation,
+        MACAddr,
+        IPV4Addr,
+        MACAddr,
+        IPV4Addr,
+    ),
+    &str,
+> {
+    if msg.len() != 28 {
+        // Note we do not state the actual length here because it would require core::fmt
+        // which takes up a massive amount of space in the binary
+        return Err("ARP parser error: length should be 28 bytes");
+    }
+
+    // Hardware type (ethernet, etc each have a numerical code)
+    let mut htypeparts = [0_u8; 2];
+    htypeparts.copy_from_slice(v[0..=1]);
+    let htype = u16::from_be_bytes(htypeparts);
+    // Protocol type
+    let mut ptypeparts = [0_u8; 2];
+    msg[2] = ptypeparts[0];
+    msg[3] = ptypeparts[1];
+    // Assumptions
+    msg[4] = 6_u8; // 6-byte MAC address lengths
+    msg[5] = 4_u8; // 4-byte protocol address lengths
+                   // Operation type (request or response)
+    let opparts = (operation as u16).to_be_bytes();
+    msg[6] = opparts[0];
+    msg[7] = opparts[1];
+
+    Ok((htype, ptype, hlen, operation, plen, sha, spa, tha, tpa))
 }
 
 /// ARP request or response flag values
@@ -77,6 +119,6 @@ pub fn build_arp_message_ipv4(
 pub enum ARPOperation {
     /// This is a request to confirm target IP address and acquire associated MAC address
     Request = 1,
-    /// This is a response to confirm target IP address and provide associated MAC address
+    /// This is a response to confirm our IP address and provide associated MAC address
     Response = 2,
 }
