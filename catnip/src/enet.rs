@@ -1,4 +1,4 @@
-//! Link layer: Ethernet II protocol per IEEE 802.3
+//! Link layer: Ethernet II protocol
 //! 
 //! Diagram at https://en.wikipedia.org/wiki/Ethernet_frame#Ethernet_II
 
