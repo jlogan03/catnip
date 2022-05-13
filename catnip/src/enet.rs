@@ -297,7 +297,7 @@ where
 /// EtherType tag values (incomplete list - there are many more not implemented here)
 ///
 /// See https://en.wikipedia.org/wiki/EtherType
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u16)]
 pub enum EtherType {
     /// IPV4
@@ -314,4 +314,19 @@ pub enum EtherType {
     PTP = 0x88A7,
     /// Catch-all for uncommon types not handled here
     Unimplemented = 0
+}
+
+
+impl From<u16> for EtherType {
+    fn from(value: u16) -> Self {
+        match value {
+            x if x == EtherType::ARP as u16 => EtherType::ARP,
+            x if x == EtherType::EtherCat as u16 => EtherType::EtherCat,
+            x if x == EtherType::IPV4 as u16 => EtherType::IPV4,
+            x if x == EtherType::IPV6 as u16 => EtherType::IPV6,
+            x if x == EtherType::PTP as u16 => EtherType::PTP,
+            x if x == EtherType::VLAN as u16 => EtherType::VLAN,
+            _ => EtherType::Unimplemented,
+        }
+    }
 }

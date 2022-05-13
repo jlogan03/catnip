@@ -275,7 +275,6 @@ pub fn parse_header_bytes<const N: usize>(
     identification_bytes.copy_from_slice(&bytes[4..6]);
     let identification = u16::from_be_bytes(identification_bytes);
 
-
     let mut options = [0_u8; 4 * N];
     if N > 0 {
         options.copy_from_slice(&bytes[20..4 * N + 20]);
