@@ -69,7 +69,7 @@ where
     /// Set version
     pub fn version(&mut self, v: Version) -> &mut Self {
         self.value[0] = self.value[0] & 0b0000_1111; // Clear existing
-        self.value[0] = self.value[0] | v as u8; // Apply new
+        self.value[0] = self.value[0] | ((v as u8) << 4); // Apply new
         self
     }
 
@@ -275,7 +275,6 @@ pub fn parse_header_bytes<const N: usize>(
     identification_bytes.copy_from_slice(&bytes[4..6]);
     let identification = u16::from_be_bytes(identification_bytes);
 
-
     let mut options = [0_u8; 4 * N];
     if N > 0 {
         options.copy_from_slice(&bytes[20..4 * N + 20]);
@@ -300,7 +299,7 @@ pub fn parse_header_bytes<const N: usize>(
 /// There are many more protocols not listed here -
 ///
 /// see https://en.wikipedia.org/wiki/List_of_IP_protocol_numbers
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Protocol {
     /// Transmission Control Protocol
     TCP = 0x06,
@@ -311,12 +310,12 @@ pub enum Protocol {
 }
 
 /// IP version bit mask
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Version {
     /// IPV4
-    V4 = 0b0100_0000,
+    V4 = 4 << 4,
     /// IPV6
-    V6 = 0b0110_0000,
+    V6 = 6 << 4,
     /// Unimplemented
     Unimplemented = 0
 }
@@ -324,7 +323,7 @@ pub enum Version {
 /// https://en.wikipedia.org/wiki/Differentiated_services
 ///
 /// Priority 2 is low-latency class
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum DSCP {
     /// Default traffic
     Standard = 0,
@@ -363,7 +362,7 @@ pub enum DSCP {
 }
 
 /// Fragmentation flags
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Flags {
     /// Do not fragment
     DF = 1 << 6,
