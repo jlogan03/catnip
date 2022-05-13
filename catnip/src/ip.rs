@@ -299,7 +299,7 @@ pub fn parse_header_bytes<const N: usize>(
 /// There are many more protocols not listed here -
 ///
 /// see https://en.wikipedia.org/wiki/List_of_IP_protocol_numbers
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Protocol {
     /// Transmission Control Protocol
     TCP = 0x06,
@@ -310,7 +310,7 @@ pub enum Protocol {
 }
 
 /// IP version bit mask
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Version {
     /// IPV4
     V4 = 4 << 4,
@@ -323,7 +323,7 @@ pub enum Version {
 /// https://en.wikipedia.org/wiki/Differentiated_services
 ///
 /// Priority 2 is low-latency class
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum DSCP {
     /// Default traffic
     Standard = 0,
@@ -362,7 +362,7 @@ pub enum DSCP {
 }
 
 /// Fragmentation flags
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Flags {
     /// Do not fragment
     DF = 1 << 6,

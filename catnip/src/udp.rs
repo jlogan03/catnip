@@ -68,7 +68,6 @@ pub fn parse_header_bytes(bytes: &[u8; 8]) -> (u16, u16, u16, u16) {
 #[derive(Clone, Debug)]
 pub struct UDPPacket<const N: usize, const M: usize>
 where
-    // [u8; 4 * N + 20]:,
     [u8; 4 * M]:,
     [u8; 4 * N + 20]:,
 {
