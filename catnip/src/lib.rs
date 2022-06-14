@@ -50,6 +50,7 @@ impl MACAddr {
 
 /// IPV4 Address as bytes
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[repr(transparent)]
 pub struct IPV4Addr {
     /// 4-byte IP address
     pub value: [u8; 4],
