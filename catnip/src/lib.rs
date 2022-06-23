@@ -9,7 +9,8 @@
 #[cfg(feature = "panic_never")]
 use panic_never as _;
 
-pub mod arp;
+pub mod arp;  // Address Resolution Protocol - midlayer between internet and transport
+pub mod dhcp;  // Dynamic Host Configuration Protocol - another midlayer between internet and transport
 pub mod enet; // Link Layer
 pub mod ip; // Internet layer
 pub mod udp; // Transport layer // Address Resolution Protocol - not a distinct layer, but required for IP and UDP to function on most networks
