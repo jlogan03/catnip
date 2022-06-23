@@ -3,13 +3,18 @@
 //! Call-response structure used by a router to assign IP addresses to devices on a local network.
 //!
 //! Partial implementation per IETF-RFC-2131; see https://datatracker.ietf.org/doc/html/rfc2131#page-22
-//! 
-//! This is intended to provide just enough functionality to accept a statically-assigned address on 
+//!
+//! This is intended to provide just enough functionality to accept a statically-assigned address on
 //! networks that require confirmation of static addresses via DHCP. This is not a full DHCP client or server
 //! state machine and is not intended for acquiring and renewing a floating address on an arbitrary network.
+//!
+//! In this case, the server refers to the router or similar hardware orchestrating the address space,
+//! while the client refers to the endpoints requesting addresses. DHCP does not follow an actual client-server
+//! model, as either party may initiate a connection, but we're sticking with the jargon per the RFC here.
 
 use crate::{IPV4Addr, MACAddr};
 use core::mem::size_of;
+use core::ptr::addr_of;
 
 const Cookie: u32 = 0x63_82_53_63;
 const ServerPort: u16 = 67;
@@ -18,8 +23,10 @@ const ClientPort: u16 = 68;
 /// The fixed-length part of the DHCP payload. The options section can vary in length, but only the first portion is important.
 ///
 /// C-ordered, packed, and aligned to 1 byte in order to support direct conversion to byte array.
+#[derive(Clone, Copy)]
 #[repr(C, packed(1))]
 struct DHCPFixedPayload {
+    /// Message op code / message type. 1 = BOOTREQUEST, 2 = BOOTREPLY
     op: DHCPOperation,
     /// Hardware type always 1 for ethernet
     htype: u8,
@@ -79,22 +86,63 @@ impl DHCPFixedPayload {
     }
 
     /// Convert to an array of big-endian (network) bytes
+    ///
+    /// In general, this should not be necessary because this struct is safe to interpret as bytes directly in hardware.
     pub fn to_be_bytes(self) -> [u8; DHCPFixedPayload::SIZE] {
         let addr = (&self) as *const _ as usize;
         let bytes = unsafe { *(addr as *const _) };
         return bytes;
     }
+
+    /// Attempt to parse from an array of big-endian (network) bytes.
+    ///
+    /// This can fail if the operation type is invalid; all other fields can be interpreted as any value.
+    /// 
+    /// This copies the data out of the original location. Avoiding this requires 
+    pub fn from_be_bytes(
+        bytes: [u8; DHCPFixedPayload::SIZE],
+    ) -> Result<DHCPFixedPayload, &'static str> {
+        // Check if this is a valid op code
+        let op = match DHCPOperation::try_from(bytes[0])
+        {
+            Ok(x) => x,
+            Err(x) => {return Err(x)}
+        };
+
+        let addr = addr_of!(bytes) as usize;
+        let mut data: DHCPFixedPayload = unsafe { *(addr as *const _) };
+        data.op = op;  // Make sure we set the parsed op type
+
+        Ok(data)
+    }
 }
 
-/// Legacy operation type field from BOOTP
+/// Message op code / message type. 1 = BOOTREQUEST, 2 = BOOTREPLY
+///
+/// Legacy operation type field from BOOTP.
+///
 /// Still has to match and change value depending on message type even though
 /// there is only one valid combination of message type and operation.
+#[derive(Clone, Copy)]
 #[repr(u8)]
 enum DHCPOperation {
     Request = 1,
     Reply = 2,
 }
 
+impl TryFrom<u8> for DHCPOperation {
+    type Error = &'static str;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            1 => return Ok(DHCPOperation::Request),
+            2 => return Ok(DHCPOperation::Reply),
+            _ => return Err("Invalid operation code for DHCP payload; should be etiher 1 or 2."),
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
 #[repr(u8)]
 enum DHCPMessageType {
     /// Client broadcast to locate available servers.
@@ -112,12 +160,12 @@ enum DHCPMessageType {
     Decline = 4,
     /// Server to client with configuration parameters, including committed network address.
     Ack = 5, // Acknowledge
-    /// Server to client indicating client's notion of network address is incorrect 
+    /// Server to client indicating client's notion of network address is incorrect
     /// (e.g., client has moved to new subnet) or client's lease as expired
     Nak = 6, // Negative-acknowledge
     /// Client to server relinquishing network address and cancelling remaining lease.
     Release = 7,
-    /// Client to server, asking only for local configuration parameters; 
+    /// Client to server, asking only for local configuration parameters;
     /// client already has externally configured network address.
     Inform = 8,
     ForceRenew = 9,
@@ -156,11 +204,10 @@ mod test {
     /// Make sure actual data alignment is fully packed and safe to convert directly to byte array
     #[test]
     fn test_layout() {
-
         let data = dummy_payload();
         let size_expected = 1 + 1 + 1 + 1 + 4 + 2 + 2 + 4 + 4 + 4 + 4 + 6 + 10 + 196;
         let size_sized = size_of::<DHCPFixedPayload>();
-        let size_actual = size_of_val(&data);  // Check for padding
+        let size_actual = size_of_val(&data); // Check for padding
 
         assert_eq!(size_sized, size_expected);
         assert_eq!(size_actual, size_expected);
@@ -170,8 +217,9 @@ mod test {
     #[test]
     fn test_to_be_bytes() {
         let data = dummy_payload();
-        let bytes = data.to_be_bytes();
+        let bytes: [u8; DHCPFixedPayload::SIZE] = data.to_be_bytes();
         let actual_size = size_of_val(&bytes);
-        assert_eq!(actual_size, DHCPFixedPayload::SIZE);
-    }   
+        let expected_size = DHCPFixedPayload::SIZE;
+        assert_eq!(actual_size, expected_size);
+    }
 }
