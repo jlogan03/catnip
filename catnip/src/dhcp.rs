@@ -2,9 +2,13 @@
 //!
 //! Call-response structure used by a router to assign IP addresses to devices on a local network.
 //!
-//! https://datatracker.ietf.org/doc/html/rfc2131#page-22
+//! Partial implementation per IETF-RFC-2131; see https://datatracker.ietf.org/doc/html/rfc2131#page-22
+//! 
+//! This is intended to provide just enough functionality to accept a statically-assigned address on 
+//! networks that require confirmation of static addresses via DHCP. This is not a full DHCP client or server
+//! state machine and is not intended for acquiring and renewing a floating address on an arbitrary network.
 
-use crate::{EtherType, IPV4Addr, MACAddr};
+use crate::{IPV4Addr, MACAddr};
 use core::mem::size_of;
 
 const Cookie: u32 = 0x63_82_53_63;
@@ -74,6 +78,7 @@ impl DHCPFixedPayload {
         }
     }
 
+    /// Convert to an array of big-endian (network) bytes
     pub fn to_be_bytes(self) -> [u8; DHCPFixedPayload::SIZE] {
         let addr = (&self) as *const _ as usize;
         let bytes = unsafe { *(addr as *const _) };
@@ -81,6 +86,9 @@ impl DHCPFixedPayload {
     }
 }
 
+/// Legacy operation type field from BOOTP
+/// Still has to match and change value depending on message type even though
+/// there is only one valid combination of message type and operation.
 #[repr(u8)]
 enum DHCPOperation {
     Request = 1,
@@ -89,13 +97,28 @@ enum DHCPOperation {
 
 #[repr(u8)]
 enum DHCPMessageType {
+    /// Client broadcast to locate available servers.
     Discover = 1,
+    /// Server to client in response to DHCPDISCOVER with offer of configuration parameters.
     Offer = 2,
+    /// Client message to servers either (a) requesting
+    /// offered parameters from one server and implicitly
+    /// declining offers from all others, (b) confirming
+    /// correctness of previously allocated address after,
+    /// e.g., system reboot, or (c) extending the lease on a
+    /// particular network address.
     Request = 3,
+    /// Client to server indicating network address is already in use.
     Decline = 4,
+    /// Server to client with configuration parameters, including committed network address.
     Ack = 5, // Acknowledge
+    /// Server to client indicating client's notion of network address is incorrect 
+    /// (e.g., client has moved to new subnet) or client's lease as expired
     Nak = 6, // Negative-acknowledge
+    /// Client to server relinquishing network address and cancelling remaining lease.
     Release = 7,
+    /// Client to server, asking only for local configuration parameters; 
+    /// client already has externally configured network address.
     Inform = 8,
     ForceRenew = 9,
     LeaseQuery = 10,
@@ -111,15 +134,13 @@ enum DHCPMessageType {
 
 #[cfg(test)]
 mod test {
+    use super::DHCPFixedPayload;
+    use core::mem::{size_of, size_of_val};
 
-    /// Make sure actual data alignment is fully packed and safe to convert directly to byte array
-    #[test]
-    fn test_layout() {
-        use super::{DHCPFixedPayload, DHCPOperation};
+    /// Make an example of the fixed portion of a DHCP payload
+    fn dummy_payload() -> DHCPFixedPayload {
+        use super::DHCPOperation;
         use crate::{IPV4Addr, MACAddr};
-        use core::mem::{size_of, size_of_val};
-        // use core::ptr::*;
-
         let ip = IPV4Addr {
             value: [0, 0, 0, 0],
         };
@@ -129,11 +150,28 @@ mod test {
 
         let data = DHCPFixedPayload::new(DHCPOperation::Request, ip, ip, ip, ip, mac);
 
+        data
+    }
+
+    /// Make sure actual data alignment is fully packed and safe to convert directly to byte array
+    #[test]
+    fn test_layout() {
+
+        let data = dummy_payload();
         let size_expected = 1 + 1 + 1 + 1 + 4 + 2 + 2 + 4 + 4 + 4 + 4 + 6 + 10 + 196;
         let size_sized = size_of::<DHCPFixedPayload>();
-        let size_actual = size_of_val(&data);
+        let size_actual = size_of_val(&data);  // Check for padding
 
         assert_eq!(size_sized, size_expected);
         assert_eq!(size_actual, size_expected);
     }
+
+    /// Make sure we can successfully convert to a byte array
+    #[test]
+    fn test_to_be_bytes() {
+        let data = dummy_payload();
+        let bytes = data.to_be_bytes();
+        let actual_size = size_of_val(&bytes);
+        assert_eq!(actual_size, DHCPFixedPayload::SIZE);
+    }   
 }
