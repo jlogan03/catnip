@@ -1,24 +1,38 @@
-//! Dynamic Host Configuration Protocol for IPV4
+//! Dynamic Host Configuration Protocol for IPV4.
 //!
-//! Call-response structure used by a router to assign IP addresses to devices on a local network.
+//! Client side of the call-response structure used by a router to assign IP addresses to devices on a local network.
 //!
 //! Partial implementation per IETF-RFC-2131; see https://datatracker.ietf.org/doc/html/rfc2131#page-22
 //!
 //! This is intended to provide just enough functionality to accept a statically-assigned address on
-//! networks that require confirmation of static addresses via DHCP. This is not a full DHCP client or server
-//! state machine and is not intended for acquiring and renewing a floating address on an arbitrary network.
+//! networks that require confirmation of static addresses with an indefinite lease duration via DHCP.
+//! This is not a full DHCP client or server state machine and is not intended for acquiring and renewing
+//!  a floating address on an arbitrary network. In fact, we avoid using a state machine entirely because
+//! most ergonomic representation of a state machine in rust is to use To/From, but this results in moving
+//! the memory for the full state to a new stack frame at each state transition.
 //!
 //! In this case, the server refers to the router or similar hardware orchestrating the address space,
-//! while the client refers to the endpoints requesting addresses. DHCP does not follow an actual client-server
-//! model, as either party may initiate a connection, but we're sticking with the jargon per the RFC here.
+//! while the client refers to the endpoints requesting addresses. DHCP does not really follow a client-server
+//! model, as either party may initiate a connection or request, but it's reasonably descriptive and
+//! we're sticking with the jargon per the RFC here.
 
 use crate::{IPV4Addr, MACAddr};
 use core::mem::size_of;
 use core::ptr::addr_of;
 
-const Cookie: u32 = 0x63_82_53_63;
-const ServerPort: u16 = 67;
-const ClientPort: u16 = 68;
+const COOKIE: u32 = 0x63_82_53_63;
+const SERVER_PORT: u16 = 67;
+const CLIENT_PORT: u16 = 68;
+
+enum DHCPErrorKind {
+    InvalidOperationType,
+    InvalidCookieValue
+}
+
+struct DHCPError {
+    kind: DHCPErrorKind,
+    msg: &'static str,
+}
 
 /// The fixed-length part of the DHCP payload. The options section can vary in length, but only the first portion is important.
 ///
@@ -34,7 +48,7 @@ struct DHCPFixedPayload {
     hlen: u8,
     /// Legacy field, always 0
     hops: u8,
-    /// Transaction ID; assigned by router
+    /// Transaction ID; assigned by router; must be kept the same through a transaction
     xid: u32,
     /// Seconds elapsed since client started transaction
     secs: u16,
@@ -54,6 +68,9 @@ struct DHCPFixedPayload {
     pad0: [u8; 10],
     /// Padding of BOOTP legacy fields and server's irrelevant stringified name
     pad1: [u8; 196],
+    /// "Magic cookie" identifying this as a DHCP message.
+    /// Must always have the value of 0x63_82_53_63 (in dhcp::COOKIE)
+    cookie: u32,
 }
 
 impl DHCPFixedPayload {
@@ -82,6 +99,7 @@ impl DHCPFixedPayload {
             chaddr: chaddr,
             pad0: [0_u8; 10],
             pad1: [0_u8; 196],
+            cookie: COOKIE,
         }
     }
 
@@ -97,21 +115,35 @@ impl DHCPFixedPayload {
     /// Attempt to parse from an array of big-endian (network) bytes.
     ///
     /// This can fail if the operation type is invalid; all other fields can be interpreted as any value.
-    /// 
-    /// This copies the data out of the original location. Avoiding this requires 
+    ///
+    /// This copies the data out of the original location. Avoiding this requires
     pub fn from_be_bytes(
         bytes: [u8; DHCPFixedPayload::SIZE],
-    ) -> Result<DHCPFixedPayload, &'static str> {
-        // Check if this is a valid op code
-        let op = match DHCPOperation::try_from(bytes[0])
-        {
+    ) -> Result<DHCPFixedPayload, DHCPError> {
+        // Check if the first byte is a valid op code
+        let op = match DHCPOperation::try_from(bytes[0]) {
             Ok(x) => x,
-            Err(x) => {return Err(x)}
+            Err(x) => return Err(x),
         };
 
+        // Interpret this block of data directly as the struct
         let addr = addr_of!(bytes) as usize;
         let mut data: DHCPFixedPayload = unsafe { *(addr as *const _) };
-        data.op = op;  // Make sure we set the parsed op type
+
+        // Check if the cookie is correct
+        // It is ok to read unaligned here because we are aligned to single bytes;
+        // the address is always exact, but the compiler doesn't know that
+        let cookie: u32 = unsafe { addr_of!(data.cookie).read_unaligned() };
+        match cookie {
+            x if x == COOKIE => {}
+            _ => return Err(DHCPError {
+                kind: DHCPErrorKind::InvalidCookieValue,
+                msg: "Parsed cookie value does not match DHCP magic cookie"
+            }),
+        }
+
+        // Make sure we set the op type to the parsed value
+        data.op = op;
 
         Ok(data)
     }
@@ -131,13 +163,16 @@ enum DHCPOperation {
 }
 
 impl TryFrom<u8> for DHCPOperation {
-    type Error = &'static str;
+    type Error = DHCPError;
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
             1 => return Ok(DHCPOperation::Request),
             2 => return Ok(DHCPOperation::Reply),
-            _ => return Err("Invalid operation code for DHCP payload; should be etiher 1 or 2."),
+            _ => return Err(DHCPError{
+                kind: DHCPErrorKind::InvalidOperationType,
+                msg: "Invalid operation code for DHCP payload; should be etiher 1 or 2."
+            }),
         }
     }
 }
@@ -205,7 +240,7 @@ mod test {
     #[test]
     fn test_layout() {
         let data = dummy_payload();
-        let size_expected = 1 + 1 + 1 + 1 + 4 + 2 + 2 + 4 + 4 + 4 + 4 + 6 + 10 + 196;
+        let size_expected = 1 + 1 + 1 + 1 + 4 + 2 + 2 + 4 + 4 + 4 + 4 + 6 + 10 + 196 + 4;
         let size_sized = size_of::<DHCPFixedPayload>();
         let size_actual = size_of_val(&data); // Check for padding
 
