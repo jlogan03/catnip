@@ -26,7 +26,7 @@ const CLIENT_PORT: u16 = 68;
 
 enum DHCPErrorKind {
     InvalidOperationType,
-    InvalidCookieValue
+    InvalidCookieValue,
 }
 
 struct DHCPError {
@@ -136,10 +136,12 @@ impl DHCPFixedPayload {
         let cookie: u32 = unsafe { addr_of!(data.cookie).read_unaligned() };
         match cookie {
             x if x == COOKIE => {}
-            _ => return Err(DHCPError {
-                kind: DHCPErrorKind::InvalidCookieValue,
-                msg: "Parsed cookie value does not match DHCP magic cookie"
-            }),
+            _ => {
+                return Err(DHCPError {
+                    kind: DHCPErrorKind::InvalidCookieValue,
+                    msg: "Parsed cookie value does not match DHCP magic cookie",
+                })
+            }
         }
 
         // Make sure we set the op type to the parsed value
@@ -169,10 +171,12 @@ impl TryFrom<u8> for DHCPOperation {
         match value {
             1 => return Ok(DHCPOperation::Request),
             2 => return Ok(DHCPOperation::Reply),
-            _ => return Err(DHCPError{
-                kind: DHCPErrorKind::InvalidOperationType,
-                msg: "Invalid operation code for DHCP payload; should be etiher 1 or 2."
-            }),
+            _ => {
+                return Err(DHCPError {
+                    kind: DHCPErrorKind::InvalidOperationType,
+                    msg: "Invalid operation code for DHCP payload; should be etiher 1 or 2.",
+                })
+            }
         }
     }
 }

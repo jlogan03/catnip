@@ -43,6 +43,12 @@ pub struct MACAddr {
 }
 
 impl MACAddr {
+    /// Broadcast address (all ones)
+    pub const BROADCAST: MACAddr = MACAddr { value: [0xFF_u8; 6]};
+
+    /// Any address (all zeroes)
+    pub const ANY: MACAddr = MACAddr { value: [0x0_u8; 6]};
+
     /// Formalize a MAC address from bytes
     pub fn new(value: [u8; 6]) -> Self {
         return MACAddr { value: value };
@@ -58,6 +64,12 @@ pub struct IPV4Addr {
 }
 
 impl IPV4Addr {
+    /// Broadcast address (all ones)
+    pub const BROADCAST: IPV4Addr = IPV4Addr { value: [0xFF_u8; 4]};
+
+    /// Any address (all zeroes)
+    pub const ANY: IPV4Addr = IPV4Addr { value: [0x0_u8; 4]};
+
     /// Formalize a IPV4 address from bytes
     pub fn new(value: [u8; 4]) -> Self {
         return IPV4Addr { value: value };
