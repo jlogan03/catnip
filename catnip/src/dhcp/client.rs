@@ -5,37 +5,49 @@ use crate::{IPV4Addr, MACAddr};
 use core::marker::PhantomData;
 
 // Nominal state flow
-struct Init;
-struct Selecting;
-struct Requesting;
-struct Bound;
-struct Renewing;
-struct Rebinding;
+
+///
+pub struct Init;
+///
+pub struct Selecting;
+///
+pub struct Requesting;
+///
+pub struct Bound;
+///
+pub struct Renewing;
+///
+pub struct Rebinding;
+
 // Troubleshooting states
-struct InitReboot;
-struct Rebooting;
-// Self-assigned static addressing
-// Just broadcast an Inform message and wait for Ack or Nak
-struct Informing;  // Can transition to Bound or Init
+
+///
+pub struct InitReboot;
+///
+pub struct Rebooting;
+
+/// Self-assigned static addressing
+/// Just broadcast an Inform message and wait for Ack or Nak
+pub struct Informing;  // Can transition to Bound or Init
 
 /// Empty trait for identifying structs that are valid states
-pub trait DhcpState {}
-impl DhcpState for Init {}
-impl DhcpState for Selecting {}
-impl DhcpState for Requesting {}
-impl DhcpState for Bound {}
-impl DhcpState for Renewing {}
-impl DhcpState for Rebinding {}
-impl DhcpState for InitReboot {}
-impl DhcpState for Informing {}
+pub trait State {}
+impl State for Init {}
+impl State for Selecting {}
+impl State for Requesting {}
+impl State for Bound {}
+impl State for Renewing {}
+impl State for Rebinding {}
+impl State for InitReboot {}
+impl State for Informing {}
 
 
 /// DHCP client shared state.
-pub struct DhcpSharedState {
-    // client_id: u16,
+pub struct DhcpData<T: State> {
+    _marker: PhantomData<T>,
     transaction_id: u32,
     ipaddr: Option<IPV4Addr>,
-    macaddr: Option<MACAddr>,
+    macaddr: MACAddr,
     serveraddr: Option<IPV4Addr>,
     router: Option<IPV4Addr>,
     gateway: Option<IPV4Addr>,
@@ -45,30 +57,61 @@ pub struct DhcpSharedState {
     rebinding_time: u32,
 }
 
-/// DHCP client state machine
-/// Stores up to 4 DNS server addresses.
-pub struct DhcpClient<T: DhcpState> {
-    _marker: PhantomData<T>,
-    state: DhcpSharedState,
+/// DHCP client states with shared data.
+/// 
+/// Enum structure provides typefixed size in memory 
+pub enum DhcpState {
+    ///
+    Init(DhcpData<Init>),
+    ///
+    Selecting(DhcpData<Selecting>),
+    ///
+    Requesting(DhcpData<Requesting>),
+    ///
+    Bound(DhcpData<Bound>),
+    ///
+    Renewing(DhcpData<Renewing>),
+    ///
+    Rebinding(DhcpData<Rebinding>),
+    ///
+    InitReboot(DhcpData<InitReboot>),
+    ///
+    Informing(DhcpData<Informing>),
 }
 
-impl<T: DhcpState> DhcpClient<T> {
-    fn from_state(state: DhcpSharedState) -> DhcpClient<T> {
-        DhcpClient::<T> {
-            _marker: PhantomData,
-            state: state
+/// DHCP client state machine.
+pub struct Dhcp {
+    /// 
+    state: DhcpState
+}
+
+impl Dhcp {
+    fn new_informing(ipaddr: IPV4Addr, macaddr: MACAddr) -> Self  {
+        Dhcp { 
+            state:  DhcpState::Init(
+                DhcpData::<Init> {
+                    _marker: PhantomData::<Init>,
+                    transaction_id: 0,
+                    ipaddr: Some(ipaddr),
+                    macaddr: macaddr,
+                    serveraddr: None,
+                    router: None,
+                    gateway: None,
+                    dns: None,
+                    lease_time: 0_u32,
+                    renewal_time: 0_u32,
+                    rebinding_time: 0_u32,
+                }
+            )
         }
     }
-}
 
-impl Into<DhcpClient<Informing>> for DhcpClient<Selecting> {
-    fn into(self) -> DhcpClient<Informing> {
-        DhcpClient::<Informing>::from_state(self.state)
-    }
-}
-
-impl Into<DhcpClient<Bound>> for DhcpClient<Informing> {
-    fn into(self) -> DhcpClient<Bound> {
-        DhcpClient::<Bound>::from_state(self.state)
+    fn step(&mut self) {
+        match &self.state {
+            DhcpState::Init(x) => {}
+            DhcpState::Selecting(x) => {}
+            DhcpState::Requesting(x) => {}
+            _ => {}
+        }
     }
 }
