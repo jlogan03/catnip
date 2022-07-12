@@ -21,11 +21,11 @@ jobs:
           rustup target add thumbv7em-none-eabihf
       - name: Build and test
         run: |
-          # Run tests of all functionality except compatibility with panic-never
-          cargo test -- --nocapture --no-default-features --features crc
+          # Run tests of all functionality except compatibility with panic-never and no-std
+          cargo test --no-default-features -- --nocapture 
 
           # Check for panic branches and no-std compatibility by building for an anonymous platform
           cd ./test/test_no_std 
           cargo build --target thumbv7em-none-eabihf
-          
+
       - run: echo "🍏 This job's status is ${{ job.status }}."
