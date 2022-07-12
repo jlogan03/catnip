@@ -16,8 +16,16 @@ jobs:
           #sudo apt update
           sudo apt install build-essential
           curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+
+          # A target with no base runtime is required to test no-std and panic-never
+          rustup target add thumbv7em-none-eabihf
       - name: Build and test
         run: |
-          cd catnip
-          cargo test -- --nocapture
+          # Run tests of all functionality except compatibility with panic-never
+          cargo test -- --nocapture --no-default-features --features crc
+
+          # Check for panic branches and no-std compatibility by building for an anonymous platform
+          cd ./test/test_no_std 
+          cargo build --target thumbv7em-none-eabihf
+          
       - run: echo "🍏 This job's status is ${{ job.status }}."

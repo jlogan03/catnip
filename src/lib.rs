@@ -9,7 +9,7 @@
 #[cfg(feature = "panic_never")]
 use panic_never as _;
 
-pub mod arp;
+pub mod arp; // Address Resolution Protocol - midlayer between internet and transport
 pub mod enet; // Link Layer
 pub mod ip; // Internet layer
 pub mod udp; // Transport layer // Address Resolution Protocol - not a distinct layer, but required for IP and UDP to function on most networks
@@ -42,6 +42,14 @@ pub struct MACAddr {
 }
 
 impl MACAddr {
+    /// Broadcast address (all ones)
+    pub const BROADCAST: MACAddr = MACAddr {
+        value: [0xFF_u8; 6],
+    };
+
+    /// Any address (all zeroes)
+    pub const ANY: MACAddr = MACAddr { value: [0x0_u8; 6] };
+
     /// Formalize a MAC address from bytes
     pub fn new(value: [u8; 6]) -> Self {
         return MACAddr { value: value };
@@ -50,12 +58,21 @@ impl MACAddr {
 
 /// IPV4 Address as bytes
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[repr(transparent)]
 pub struct IPV4Addr {
     /// 4-byte IP address
     pub value: [u8; 4],
 }
 
 impl IPV4Addr {
+    /// Broadcast address (all ones)
+    pub const BROADCAST: IPV4Addr = IPV4Addr {
+        value: [0xFF_u8; 4],
+    };
+
+    /// Any address (all zeroes)
+    pub const ANY: IPV4Addr = IPV4Addr { value: [0x0_u8; 4] };
+
     /// Formalize a IPV4 address from bytes
     pub fn new(value: [u8; 4]) -> Self {
         return IPV4Addr { value: value };
@@ -138,8 +155,8 @@ pub fn calc_ip_checksum(data: &[u8]) -> u16 {
 #[cfg(test)]
 mod tests {
 
-    extern crate std;
-    use std::println;
+    // extern crate std;
+    // use std::println;
 
     use crate::{calc_ip_checksum, ip::IPV4Header};
 
@@ -161,7 +178,7 @@ mod tests {
         // Make sure that the checksum over the header that already includes a checksum comes out correct
         let cyclic_checksum = calc_ip_checksum(&header.value);
         assert_eq!(cyclic_checksum, cyclic_checksum_expected);
-        println!("Cyclic Checksum: {:x}", cyclic_checksum);
+        // println!("Cyclic Checksum: {:x}", cyclic_checksum);
 
         // Make sure that the checksum over the header with the existing checksum removed also comes out correct
         let mut ipheader_example_16_modified_checksum = ipheader_example_16.clone();
