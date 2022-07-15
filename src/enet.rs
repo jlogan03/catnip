@@ -17,6 +17,7 @@ use crc32fast;
 ///
 /// value [12:13] ethertype
 #[derive(ByteStruct, Clone, Copy, Debug)]
+#[byte_struct_be]
 pub struct EthernetHeader {
     /// Destination MAC address
     pub dst_macaddr: MacAddr,
@@ -24,6 +25,14 @@ pub struct EthernetHeader {
     pub src_macaddr: MacAddr,
     /// Type of content (IPV4, IPV6, ARP, PTP, etc)
     pub ethertype: EtherType,
+}
+
+impl EthernetHeader {
+    fn to_be_bytes(&self) -> [u8; Self::BYTE_LEN] {
+        let mut bytes = [0_u8; Self::BYTE_LEN];
+        self.write_bytes(&mut bytes);
+        bytes
+    }
 }
 
 /// Ethernet frame around arbitrary data
@@ -70,6 +79,17 @@ where
         for i in 0..4 {
             bytes[Self::BYTE_LEN - 4 + i] = checksum_bytes[i];
         }
+    }
+}
+
+impl<T> EthernetFrame<T>
+where
+    T: ByteStruct,
+{
+    fn to_be_bytes(&self) -> [u8; Self::BYTE_LEN] {
+        let mut bytes = [0_u8; Self::BYTE_LEN];
+        self.write_bytes(&mut bytes);
+        bytes
     }
 }
 
@@ -132,6 +152,12 @@ impl ByteStruct for EtherType {
         } else {
             // Do nothing - no bytes to write
         }
+    }
+}
+
+impl EtherType {
+    fn to_be_bytes(&self) -> [u8; Self::BYTE_LEN] {
+        (*self as u16).to_be_bytes()
     }
 }
 

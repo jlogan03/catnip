@@ -52,6 +52,14 @@ pub struct ArpPayload {
     pub dst_ipaddr: IpV4Addr,
 }
 
+impl ArpPayload {
+    fn to_be_bytes(&self) -> [u8; Self::BYTE_LEN] {
+        let mut bytes = [0_u8; Self::BYTE_LEN];
+        self.write_bytes(&mut bytes);
+        bytes
+    }
+}
+
 /// ARP request or response flag values
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u16)]
@@ -80,23 +88,21 @@ impl ByteStructLen for ArpOperation {
 
 impl ByteStruct for ArpOperation {
     fn read_bytes(bytes: &[u8]) -> Self {
-        if bytes.len() < 2 {
-            return ArpOperation::Unimplemented;
-        } else {
-            let mut bytes_read = [0_u8; 2];
-            bytes_read.copy_from_slice(&bytes[0..=1]);
-            return ArpOperation::from(u16::from_be_bytes(bytes_read));
-        }
+        let mut bytes_read = [0_u8; 2];
+        bytes_read.copy_from_slice(&bytes[0..=1]);
+        return ArpOperation::from(u16::from_be_bytes(bytes_read));
     }
 
     fn write_bytes(&self, bytes: &mut [u8]) {
-        if bytes.len() >= 2 {
-            let bytes_to_write = (*self as u16).to_be_bytes();
-            bytes[0] = bytes_to_write[0];
-            bytes[1] = bytes_to_write[1];
-        } else {
-            // Do nothing - no bytes to write
-        }
+        let bytes_to_write = self.to_be_bytes();
+        bytes[0] = bytes_to_write[0];
+        bytes[1] = bytes_to_write[1];
+    }
+}
+
+impl ArpOperation {
+    fn to_be_bytes(&self) -> [u8; Self::BYTE_LEN] {
+        (*self as u16).to_be_bytes()
     }
 }
 
@@ -146,12 +152,11 @@ mod tests {
     fn test_parse_arp_msg() -> () {
         let msg = build_dummy_msg();
         // Serialize
-        let mut bytes = [0_u8; ArpPayload::BYTE_LEN];
-        msg.write_bytes(&mut bytes[..]);
+        let bytes = msg.to_be_bytes();
         // Deserialize
         let msg_parsed = ArpPayload::read_bytes(&bytes);
 
-        // assert_eq!(msg, msg_parsed);
+        assert_eq!(msg, msg_parsed);
     }
 
 }

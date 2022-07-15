@@ -32,7 +32,7 @@ bitfields!(
 /// IPV4 header per IETF-RFC-791
 ///
 /// https://en.wikipedia.org/wiki/IPv4
-#[derive(ByteStruct, Clone, Debug)]
+#[derive(ByteStruct, Clone, Copy, Debug)]
 #[byte_struct_be]
 pub struct IpV4Header {
     /// Combined version and header length info in a single byte
@@ -58,32 +58,61 @@ pub struct IpV4Header {
 }
 
 impl IpV4Header {
-    const BYTE_LEN: usize = 20;
-
-    /// Get length of byte representation
-    fn len(&self) -> usize {
-        Self::BYTE_LEN
-    }
-
     /// Pack into big-endian (network) byte array
     pub fn to_be_bytes(&self) -> [u8; Self::BYTE_LEN] {
-        let mut header_bytes = [0_u8; Self::BYTE_LEN];
-        self.write_bytes(&mut header_bytes);
-
-        header_bytes
+        let mut bytes = [0_u8; Self::BYTE_LEN];
+        self.write_bytes(&mut bytes);
+        bytes
     }
 }
 
-
 /// IPV4 frame with header and data.
-/// 
+///
 /// Data should be sized in a multiple of 4 bytes.
-#[derive(Clone, Debug)]
-pub struct IpFrame<T> where T: ByteStruct {
+#[derive(Clone, Copy, Debug)]
+pub struct IpFrame<T>
+where
+    T: ByteStruct,
+{
     /// IP header
     pub header: IpV4Header,
     /// Data such as a UDP header; should be some multiple of 4 bytes (32-bit words)
-    pub data: T
+    pub data: T,
+}
+
+impl<T> ByteStructLen for IpFrame<T>
+where
+    T: ByteStruct,
+{
+    const BYTE_LEN: usize = IpV4Header::BYTE_LEN + T::BYTE_LEN;
+}
+
+impl<T> ByteStruct for IpFrame<T>
+where
+    T: ByteStruct,
+{
+    fn read_bytes(bytes: &[u8]) -> Self {
+        IpFrame::<T> {
+            header: IpV4Header::read_bytes(&bytes[0..IpV4Header::BYTE_LEN]),
+            data: T::read_bytes(&bytes[IpV4Header::BYTE_LEN..]),
+        }
+    }
+
+    fn write_bytes(&self, bytes: &mut [u8]) {
+        self.header.write_bytes(&mut bytes[0..IpV4Header::BYTE_LEN]);
+        self.data.write_bytes(&mut bytes[IpV4Header::BYTE_LEN..]);
+    }
+}
+
+impl<T> IpFrame<T>
+where
+    T: ByteStruct,
+{
+    fn to_be_bytes(&self) -> [u8; Self::BYTE_LEN] {
+        let mut bytes = [0_u8; Self::BYTE_LEN];
+        self.write_bytes(&mut bytes);
+        bytes
+    }
 }
 
 /// Common choices of transport-layer protocols
@@ -130,6 +159,12 @@ impl ByteStruct for Protocol {
     }
 }
 
+impl Protocol {
+    fn to_be_bytes(&self) -> [u8; Self::BYTE_LEN] {
+        (*self as u8).to_be_bytes()
+    }
+}
+
 /// https://en.wikipedia.org/wiki/Differentiated_services
 ///
 /// Priority 2 is low-latency class
@@ -167,5 +202,11 @@ impl ByteStruct for DSCP {
         } else {
             // Do nothing - no bytes to write
         }
+    }
+}
+
+impl DSCP {
+    fn to_be_bytes(&self) -> [u8; Self::BYTE_LEN] {
+        (*self as u8).to_be_bytes()
     }
 }

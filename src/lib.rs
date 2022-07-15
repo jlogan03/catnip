@@ -31,13 +31,13 @@ impl<const N: usize> Deref for ByteArray<N> {
     type Target = [u8; N];
 
     fn deref(&self) -> &Self::Target {
-        self
+        &self.0
     }
 }
 
 impl<const N: usize> DerefMut for ByteArray<N> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        self
+        &mut self.0
     }
 }
 
@@ -53,11 +53,15 @@ impl<const N: usize> ByteStruct for ByteArray<N> {
     }
 
     fn write_bytes(&self, bytes: &mut [u8]) {
-        let end: usize = bytes.len();
-        let n = end.min(N);
-        for i in 0..n {
+        for i in 0..N {
             bytes[i] = self[i];
         }
+    }
+}
+
+impl<const N: usize> ByteArray<N> {
+    fn to_be_bytes(&self) -> [u8; N] {
+        *self.deref()
     }
 }
 
