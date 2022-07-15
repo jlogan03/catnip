@@ -19,169 +19,105 @@
 //! that address to itself. The success of that method requires that all devices on the network be configured to respond to ARP requests,
 //! which is not necessarily the case.
 
-use crate::{EtherType, IPV4Addr, MACAddr};
+use crate::{EtherType, IpV4Addr, MacAddr};
 
-/// An ARP request or response with IPV4 addresses.
+use byte_struct::*;
+
+/// An ARP request or response with IPV4 addresses and standard MAC addresses.
 /// Assumes 6-byte standard MAC addresses and 4-byte IPV4 addresses; this function can't be as general as the parser
-/// because we need to know the size of the output at compile time, whereas the parser can return references to
-/// arbitrarily-sized slices of the source data that is likely an excerpt of a sized buffer.
+/// because we need to know the size of the output at compile time.
 /// See https://en.wikipedia.org/wiki/Address_Resolution_Protocol .
 ///
 /// Hardware type is 1 for ethernet.
-pub fn build_arp_msg_ipv4(
-    ptype: EtherType,
-    operation: ARPOperation,
-    sha: MACAddr,
-    spa: IPV4Addr,
-    tha: MACAddr,
-    tpa: IPV4Addr,
-) -> [u8; 28] {
-    let mut msg = [0_u8; 28];
-
-    // Hardware type (ethernet, etc each have a numerical code)
-    let htypeparts = 1_u16.to_be_bytes();
-    msg[0] = htypeparts[0];
-    msg[1] = htypeparts[1];
-    // Protocol type
-    let ptypeparts = (ptype as u16).to_be_bytes();
-    msg[2] = ptypeparts[0];
-    msg[3] = ptypeparts[1];
-    // Assumptions
-    msg[4] = 6_u8; // 6-byte MAC address lengths
-    msg[5] = 4_u8; // 4-byte protocol address lengths
-                   // Operation type (request or response)
-    let opparts = (operation as u16).to_be_bytes();
-    msg[6] = opparts[0];
-    msg[7] = opparts[1];
-    // Sender hardware address
-    for i in 0..6 {
-        msg[8 + i] = sha.value[i];
-    }
-    // Sender protocol address
-    for i in 0..4 {
-        msg[14 + i] = spa.value[i];
-    }
-    // Target hardware address (all zeros for request)
-    for i in 0..6 {
-        msg[18 + i] = tha.value[i];
-    }
-    // Target protocol address (what IP address are we trying to resolve?)
-    for i in 0..4 {
-        msg[24 + i] = tpa.value[i]
-    }
-
-    msg
-}
-
-/// Attempt to parse an ARP message from a slice.
-/// Assumes 6-byte standard MAC addresses and 4-byte IPV4 addresses on ethernet.
-/// but parses the "HLEN" and "PLEN" fields in order to check this assumption.
-pub fn parse_arp_msg(
-    msg: &[u8],
-) -> Result<
-    (
-        u16,
-        EtherType,
-        u8,
-        u8,
-        ARPOperation,
-        &[u8],
-        &[u8],
-        &[u8],
-        &[u8],
-    ),
-    &str,
-> {
-    // Is this message long enough to contain an ARP header?
-    if msg.len() < 8 {
-        // Note we do not state the actual length here because it would require core::fmt
-        // which takes up a massive amount of space in the binary
-        return Err("ARP parser error: length should be at least 8 bytes");
-    }
-
-    // Hardware type (1 for ethernet)
-    let mut htypeparts = [0_u8; 2];
-    htypeparts.copy_from_slice(&msg[0..=1]);
-    let htype = u16::from_be_bytes(htypeparts);
-    // Protocol type
-    let mut ptypeparts = [0_u8; 2];
-    ptypeparts.copy_from_slice(&msg[2..=3]);
-    let ptype = EtherType::from(u16::from_be_bytes(ptypeparts));
-    // Hardware address length (6 for standard MAC)
-    let hlen = msg[4];
-    // Protocol address length (4 for IPV4)
-    let plen = msg[5];
-
-    // Check length again - is the message long enough to contain both addresses for both machines?
-    // len = 28 for IPV4 with standard 6-byte MAC address
-    if msg.len() < 8 + (2 * hlen as usize) + (2 * plen as usize) {
-        return Err("ARP parser error: message length too short to hold addresses");
-    }
-
-    // Operation type (request=1 or response=2)
-    let mut opparts = [0_u8; 2];
-    opparts.copy_from_slice(&msg[6..=7]);
-    let operation = ARPOperation::from(u16::from_be_bytes(opparts));
-
-    // Variable-length parts
-    // Sender hardware address
-    let (start, len) = (8, hlen as usize);
-    let end = start + len;
-    let sha = &msg[start..end];
-    // Sender protocol address
-    let (start, len) = (end, plen as usize);
-    let end = start + len;
-    let spa = &msg[start..end];
-    // Target hardware address
-    let (start, len) = (end, hlen as usize);
-    let end = start + len;
-    let tha = &msg[start..end];
-    // Target protocol address
-    let (start, len) = (end, plen as usize);
-    let end = start + len;
-    let tpa = &msg[start..end];
-
-    Ok((htype, ptype, hlen, plen, operation, sha, spa, tha, tpa))
+#[derive(ByteStruct, Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[byte_struct_be]
+pub struct ArpPayload {
+    pub htype: u16,
+    pub ptype: EtherType,
+    pub hlen: u8,
+    pub plen: u8,
+    pub operation: ArpOperation,
+    pub src_mac: MacAddr,
+    pub src_ipaddr: IpV4Addr,
+    pub dst_mac: MacAddr,
+    pub dst_ipaddr: IpV4Addr,
 }
 
 /// ARP request or response flag values
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u16)]
-pub enum ARPOperation {
+pub enum ArpOperation {
     /// This is a request to confirm target IP address and acquire associated MAC address
     Request = 1,
     /// This is a response to confirm our IP address and provide associated MAC address
     Response = 2,
     /// Invalid operation
-    Invalid = 0,
+    Unimplemented,
 }
 
-impl From<u16> for ARPOperation {
+impl From<u16> for ArpOperation {
     fn from(value: u16) -> Self {
         match value {
-            x if x == ARPOperation::Request as u16 => ARPOperation::Request,
-            x if x == ARPOperation::Response as u16 => ARPOperation::Response,
-            _ => ARPOperation::Invalid,
+            x if x == ArpOperation::Request as u16 => ArpOperation::Request,
+            x if x == ArpOperation::Response as u16 => ArpOperation::Response,
+            _ => ArpOperation::Unimplemented,
+        }
+    }
+}
+
+impl ByteStructLen for ArpOperation {
+    const BYTE_LEN: usize = 2;
+}
+
+impl ByteStruct for ArpOperation {
+    fn read_bytes(bytes: &[u8]) -> Self {
+        if bytes.len() < 2 {
+            return ArpOperation::Unimplemented;
+        } else {
+            let mut bytes_read = [0_u8; 2];
+            bytes_read.copy_from_slice(&bytes[0..=1]);
+            return ArpOperation::from(u16::from_be_bytes(bytes_read));
+        }
+    }
+
+    fn write_bytes(&self, bytes: &mut [u8]) {
+        if bytes.len() >= 2 {
+            let bytes_to_write = (*self as u16).to_be_bytes();
+            bytes[0] = bytes_to_write[0];
+            bytes[1] = bytes_to_write[1];
+        } else {
+            // Do nothing - no bytes to write
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{build_arp_msg_ipv4, parse_arp_msg, ARPOperation};
-    use crate::{EtherType, IPV4Addr, MACAddr};
+    use super::{ArpPayload, ArpOperation};
+    use crate::{EtherType, IpV4Addr, MacAddr};
+    use byte_struct::*;
 
     // extern crate std;
     // use std::println;
 
-    fn build_dummy_msg() -> [u8; 28] {
+    fn build_dummy_msg() -> ArpPayload {
         let ptypei = EtherType::IPV4;
-        let operationi = ARPOperation::Request;
-        let shai = MACAddr::new([7_u8; 6]);
-        let spai = IPV4Addr::new([8_u8; 4]);
-        let thai = MACAddr::new([9_u8; 6]);
-        let tpai = IPV4Addr::new([10_u8; 4]);
-        build_arp_msg_ipv4(ptypei, operationi, shai, spai, thai, tpai)
+        let operationi = ArpOperation::Request;
+        let shai = MacAddr::new([7_u8; 6]);
+        let spai = IpV4Addr::new([8_u8; 4]);
+        let thai = MacAddr::new([9_u8; 6]);
+        let tpai = IpV4Addr::new([10_u8; 4]);
+        ArpPayload {
+            htype: 1,
+            ptype: ptypei,
+            hlen: 6,
+            plen: 4,
+            operation: operationi,
+            src_mac: shai,
+            src_ipaddr: spai,
+            dst_mac: thai,
+            dst_ipaddr: tpai
+        }
     }
 
     /// Make sure the ARP message builder doesn't generate any panic branches
@@ -192,56 +128,15 @@ mod tests {
 
     /// Build an ARP message and make sure the parser returns the same values from the input
     #[test]
-    fn test_parse_arp_msg() -> Result<(), ()> {
-        let ptypei = EtherType::IPV4;
-        let operationi = ARPOperation::Request;
-        let shai = MACAddr::new([7_u8; 6]);
-        let spai = IPV4Addr::new([8_u8; 4]);
-        let thai = MACAddr::new([9_u8; 6]);
-        let tpai = IPV4Addr::new([10_u8; 4]);
-        let msg = build_arp_msg_ipv4(ptypei, operationi, shai, spai, thai, tpai);
-
-        match parse_arp_msg(&msg[..]) {
-            Ok((htype, ptype, hlen, plen, operation, sha, spa, tha, tpa)) => {
-                // println!("{tha:?}");
-                // println!("{thai:?}");
-                if (htype != 1)
-                    || (ptype != ptypei)
-                    || (hlen != 6)
-                    || (plen != 4)
-                    || (operation != operationi)
-                    || (sha != shai.value)
-                    || (spa != spai.value)
-                    || (tha != thai.value)
-                    || (tpa != tpai.value)
-                {
-                    Err(())
-                } else {
-                    Ok(())
-                }
-            }
-            Err(_) => Err(()),
-        }
-    }
-
-    /// Make sure the parser fails if the message is too short for the header
-    #[test]
-    fn test_parse_arp_msg_bad_header_len() -> Result<(), ()> {
-        let msg = [0_u8; 7];
-        match parse_arp_msg(&msg[..]) {
-            Ok(_) => Err(()),
-            Err(_) => Ok(())
-        }
-    }
-
-    /// Make sure the parser fails if the message is too short for the addresses
-    #[test]
-    fn test_parse_arp_msg_bad_address_len() -> Result<(), ()> {
+    fn test_parse_arp_msg() -> () {
         let msg = build_dummy_msg();
-        match parse_arp_msg(&msg[..20]) {
-            Ok(_) => Err(()),
-            Err(_) => Ok(())
-        }
+        // Serialize
+        let mut bytes = [0_u8; ArpPayload::BYTE_LEN];
+        msg.write_bytes(&mut bytes);
+        // Deserialize
+        let msg_parsed = ArpPayload::read_bytes(&bytes);
+
+        assert_eq!(msg, msg_parsed);
     }
 
 }

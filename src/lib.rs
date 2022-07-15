@@ -75,10 +75,10 @@ impl MacAddr {
     }
 
     /// Broadcast address (all ones)
-    pub const BROADCAST: MacAddr = Self::new([0xFF_u8; 6]);
+    pub const BROADCAST: MacAddr = ByteArray([0xFF_u8; 6]);
 
     /// Any address (all zeroes)
-    pub const ANY: MacAddr = Self::new([0x0_u8; 6]);
+    pub const ANY: MacAddr = ByteArray([0x0_u8; 6]);
 }
 
 /// IPV4 Address as bytes
@@ -91,10 +91,10 @@ impl IpV4Addr {
     }
 
     /// Broadcast address (all ones)
-    pub const BROADCAST: IpV4Addr = Self::new([0xFF_u8; 4]);
+    pub const BROADCAST: IpV4Addr = ByteArray([0xFF_u8; 4]);
 
     /// Any address (all zeroes)
-    pub const ANY: IpV4Addr = Self::new([0x0_u8; 4]);
+    pub const ANY: IpV4Addr = ByteArray([0x0_u8; 4]);
 }
 
 /// Calculate IP checksum per IETF-RFC-768
