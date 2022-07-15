@@ -9,25 +9,6 @@ use byte_struct::*;
 #[cfg(feature = "crc")]
 use crc32fast;
 
-/// Combined 7-byte preamble and 1-byte start-frame delimiter because they are never changed or separated
-///
-/// These are usually supplied by the hardware
-const PREAMBLE: [u8; 8] = [
-    0b1010_1010,
-    0b1010_1010,
-    0b1010_1010,
-    0b1010_1010,
-    0b1010_1010,
-    0b1010_1010,
-    0b1010_1010,
-    0b1010_1011,
-];
-
-/// Standard 96-bit inter-packet gap
-///
-/// This is usually supplied by the hardware
-const IPG: [u8; 12] = [0; 12];
-
 /// Header for Ethernet II frame like
 ///
 /// value [0:5] src macaddr
