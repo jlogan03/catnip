@@ -32,14 +32,23 @@ use byte_struct::*;
 #[derive(ByteStruct, Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[byte_struct_be]
 pub struct ArpPayload {
+    /// Hardware type (1 for ethernet)
     pub htype: u16,
+    /// Protocol type (same as ethertype from ethernet header)
     pub ptype: EtherType,
+    /// Hardware address length (6 for standard MAC)
     pub hlen: u8,
+    /// Protocol address length (4 for IPV4)
     pub plen: u8,
+    /// ARP operation type
     pub operation: ArpOperation,
+    /// Source MAC address
     pub src_mac: MacAddr,
+    /// Source IP address
     pub src_ipaddr: IpV4Addr,
+    /// Destination MAC address
     pub dst_mac: MacAddr,
+    /// Destination IP address
     pub dst_ipaddr: IpV4Addr,
 }
 

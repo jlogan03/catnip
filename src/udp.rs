@@ -15,9 +15,13 @@ use byte_struct::*;
 #[derive(ByteStruct, Clone, Copy, Debug)]
 #[byte_struct_be]
 pub struct UdpHeader {
+    /// Source port
     src_port: u16,
+    /// Destination port
     dst_port: u16,
+    /// Total frame length including header and data
     length: u16,
+    /// CRC checksum (rarely used for UDP, but must be present)
     checksum: u16,
 }
 
@@ -42,7 +46,7 @@ pub struct UdpFrame<T>
 where
     T: ByteStruct,
 {
-    /// IPV4 packet header
+    /// UDP packet header
     pub header: UdpHeader,
     /// Data to transmit; bytes must be in some multiple of 4 (32 bit words)
     pub data: T,

@@ -5,19 +5,26 @@ use crate::IpV4Addr;
 use byte_struct::*;
 
 bitfields!(
-    #[derive(Clone, Copy, Debug)]
-    Fragmentation: u16 {
+    /// Fragmentation flags and offset info
+    #[derive(Clone, Copy, Debug, Default)]
+    pub Fragmentation: u16 {
         unused: 1,
+        /// Flag for routers to drop packets instead of fragmenting
         pub do_not_fragment: 1,
+        /// Flag that there are more fragments coming
         pub more_fragments: 2,
+        /// Where we are in a set of fragments
         pub offset: 13
     }
 );
 
 bitfields!(
+    /// Combined IP version and header length in a single byte
     #[derive(Clone, Copy, Debug)]
-    VersionAndHeaderLength: u8 {
+    pub VersionAndHeaderLength: u8 {
+        /// IP protocol version (4=>4, 6=>6, ...)
         pub version: 4,
+        /// IP header length may be more than 20 if there is an Options segment
         pub header_length: 4
     }
 );
@@ -60,15 +67,25 @@ bitfields!(
 #[derive(ByteStruct, Clone, Debug)]
 #[byte_struct_be]
 pub struct IpV4Header {
+    /// Combined version and header length info in a single byte
     pub version_and_length: VersionAndHeaderLength,
+    /// Type of Service
     pub dscp: DSCP,
+    /// Total length including header and data
     pub total_length: u16,
+    /// Mostly-legacy id field
     pub identification: u16,
+    /// Mostly-legacy packet fragmentation info
     pub fragmentation: Fragmentation,
+    /// TTL counter
     pub time_to_live: u8,
+    /// Transport-layer protocol
     pub protocol: Protocol,
+    /// CRC checksum
     pub checksum: u16,
+    /// Source IP address
     pub src_ipaddr: IpV4Addr,
+    /// Destination IP address
     pub dst_ipaddr: IpV4Addr,
 }
 
@@ -89,9 +106,13 @@ impl IpV4Header {
     }
 }
 
+
+/// IPV4 frame with header and data.
+/// 
+/// Data should be sized in a multiple of 4 bytes.
 #[derive(Clone, Debug)]
-// #[byte_struct_be]
 pub struct IpFrame<T> where T: ByteStruct {
+    /// IP header
     pub header: IpV4Header,
     /// Data such as a UDP header; should be some multiple of 4 bytes (32-bit words)
     pub data: T
@@ -147,8 +168,11 @@ impl ByteStruct for Protocol {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u8)]
 pub enum DSCP {
+    /// Standard is almost always fine
     Standard = 0,
+    /// Realtime is rarely used
     Realtime = 32 << 2,
+    /// Catch-all for the many other kinds or invalid bit patterns
     Unimplemented,
 }
 

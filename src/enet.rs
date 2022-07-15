@@ -18,9 +18,11 @@ use crc32fast;
 /// value [12:13] ethertype
 #[derive(ByteStruct, Clone, Copy, Debug)]
 pub struct EthernetHeader {
-    /// The header structure in bytes
-    pub src_macaddr: MacAddr,
+    /// Destination MAC address
     pub dst_macaddr: MacAddr,
+    /// Source MAC address
+    pub src_macaddr: MacAddr,
+    /// Type of content (IPV4, IPV6, ARP, PTP, etc)
     pub ethertype: EtherType,
 }
 
@@ -30,8 +32,11 @@ pub struct EthernetFrame<T>
 where
     T: ByteStruct,
 {
+    /// Ethernet header
     header: EthernetHeader,
+    /// Data payload (probably and IP frame or ARP message)
     data: T,
+    /// CRC checksum
     checksum: u32,
 }
 
