@@ -31,39 +31,7 @@ bitfields!(
 
 /// IPV4 header per IETF-RFC-791
 ///
-/// N is number of 32-bit words to reserve for the Options section
-///
 /// https://en.wikipedia.org/wiki/IPv4
-///
-/// first 32-bit word
-///
-/// value [0] Version [4 bits], Header Length [4 bits]
-///
-/// value [1] Type-of-Service/IP Precedence/DSCP
-///
-/// value [2:3] Total Length [u16] in bytes
-///
-/// second 32-bit word
-///
-/// value [4:5] Identification [u16]
-///
-/// value [6:7] Flags [3 bits], Fragmentation Offset [13 bits]
-///
-/// third 32-bit word
-///
-/// value [8] Time-to-Live
-///
-/// value [9] Protocol
-///
-/// value [10:11] Checksum [u16]
-///
-/// fourth 32-bit word
-///
-/// value [12:15] Source IP Address
-///
-/// fifth 32-bit word
-///
-/// value [16:19] Destination IP Address
 #[derive(ByteStruct, Clone, Debug)]
 #[byte_struct_be]
 pub struct IpV4Header {
