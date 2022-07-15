@@ -6,8 +6,13 @@
 #![feature(generic_const_exprs)]
 #![feature(test)]
 
+use core::ops::{Deref, DerefMut};
+
 #[cfg(feature = "panic_never")]
 use panic_never as _;
+
+// use modular_bitfield::Specifier;
+use byte_struct::*;
 
 pub mod arp; // Address Resolution Protocol - midlayer between internet and transport
 pub mod enet; // Link Layer
@@ -15,97 +20,81 @@ pub mod ip; // Internet layer
 pub mod udp; // Transport layer // Address Resolution Protocol - not a distinct layer, but required for IP and UDP to function on most networks
 
 pub use enet::EtherType;
-pub use ip::{Flags, Protocol, Version, DSCP};
+pub use ip::Protocol;
 
-// All protocols' headers, data, and frames must be able to convert to byte array
-// in order to be consumed by EMAC/PHY drivers for transmission
-// TODO: bring this impl back in once const generic exprs in trait bounds no longer break the compiler
-// pub trait Transportable<const N: usize> {
-//     /// Length of byte representation
-//     const LENGTH: usize = N;
-//     /// Get length of byte representation
-//     fn len(&self) -> usize {
-//         Self::LENGTH
-//     }
-//     /// Convert to big-endian (network) byte array
-//     fn to_be_bytes(&self) -> [u8; N];
-// }
+/// Newtype for byte arrays in order to be able to implement traits on them
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[repr(transparent)]
+pub struct ByteArray<const N: usize>([u8; N]);
+
+impl<const N: usize> Deref for ByteArray<N> {
+    type Target = [u8; N];
+
+    fn deref(&self) -> &Self::Target {
+        self
+    }
+}
+
+impl<const N: usize> DerefMut for ByteArray<N> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self
+    }
+}
+
+impl<const N: usize> ByteStructLen for ByteArray<N> {
+    const BYTE_LEN: usize = N;
+}
+
+impl<const N: usize> ByteStruct for ByteArray<N> {
+    fn read_bytes(bytes: &[u8]) -> Self {
+        let mut out = [0_u8; N];
+        out.copy_from_slice(bytes);
+        ByteArray(out)
+    }
+
+    fn write_bytes(&self, bytes: &mut [u8]) {
+        let end: usize = bytes.len();
+        let n = end.min(N);
+        for i in 0..n {
+            bytes[i] = self[i];
+        }
+    }
+}
 
 /// MAC Addresses & methods for converting between common formats
 ///
+/// Split 24/24 format, Block ID | Device ID
+///
 /// Locally-administered addresses are [0x02, ...], [0x06, ...], [0x0A, ...], [0x0E, ...]
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
-#[repr(transparent)]
-pub struct MACAddr {
-    /// Split 24/24 format, Block ID | Device ID
-    pub value: [u8; 6],
-}
+pub type MacAddr = ByteArray<6>;
 
-impl MACAddr {
+impl MacAddr {
+    /// New from bytes
+    pub fn new(v: [u8; 6]) -> Self {
+        ByteArray(v)
+    }
+
     /// Broadcast address (all ones)
-    pub const BROADCAST: MACAddr = MACAddr {
-        value: [0xFF_u8; 6],
-    };
+    pub const BROADCAST: MacAddr = Self::new([0xFF_u8; 6]);
 
     /// Any address (all zeroes)
-    pub const ANY: MACAddr = MACAddr { value: [0x0_u8; 6] };
-
-    /// Formalize a MAC address from bytes
-    pub fn new(value: [u8; 6]) -> Self {
-        return MACAddr { value: value };
-    }
+    pub const ANY: MacAddr = Self::new([0x0_u8; 6]);
 }
 
 /// IPV4 Address as bytes
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
-#[repr(transparent)]
-pub struct IPV4Addr {
-    /// 4-byte IP address
-    pub value: [u8; 4],
-}
+pub type IpV4Addr = ByteArray<4>;
 
-impl IPV4Addr {
+impl IpV4Addr {
+    /// New from bytes
+    pub fn new(v: [u8; 4]) -> Self {
+        ByteArray(v)
+    }
+
     /// Broadcast address (all ones)
-    pub const BROADCAST: IPV4Addr = IPV4Addr {
-        value: [0xFF_u8; 4],
-    };
+    pub const BROADCAST: IpV4Addr = Self::new([0xFF_u8; 4]);
 
     /// Any address (all zeroes)
-    pub const ANY: IPV4Addr = IPV4Addr { value: [0x0_u8; 4] };
-
-    /// Formalize a IPV4 address from bytes
-    pub fn new(value: [u8; 4]) -> Self {
-        return IPV4Addr { value: value };
-    }
-}
-
-/// IP and UDP require their data to be a multiple of 4 bytes (32-bit words)
-#[derive(Clone, Debug)]
-#[repr(transparent)]
-pub struct Data<const Q: usize>
-where
-    [u8; 4 * Q]:,
-{
-    /// Byte array of data
-    pub value: [u8; 4 * Q],
-}
-
-impl<const Q: usize> Data<Q>
-where
-    [u8; 4 * Q]:,
-{
-    /// Length of byte representation
-    const LENGTH: usize = 4 * Q;
-
-    /// Get length of byte representation
-    fn len(&self) -> usize {
-        Self::LENGTH
-    }
-
-    /// Pack into big-endian (network) byte array
-    pub fn to_be_bytes(&self) -> [u8; 4 * Q] {
-        self.value
-    }
+    pub const ANY: IpV4Addr = Self::new([0x0_u8; 4]);
 }
 
 /// Calculate IP checksum per IETF-RFC-768
@@ -158,7 +147,7 @@ mod tests {
     // extern crate std;
     // use std::println;
 
-    use crate::{calc_ip_checksum, ip::IPV4Header};
+    use crate::{calc_ip_checksum, ip::IpV4Header};
 
     /// Test cyclic redundancy check following example from https://www.thegeekstuff.com/2012/05/ip-header-checksum/
     #[test]
