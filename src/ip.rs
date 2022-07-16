@@ -70,7 +70,7 @@ impl IpV4Header {
 ///
 /// Data should be sized in a multiple of 4 bytes.
 #[derive(Clone, Copy, Debug)]
-pub struct IpFrame<T>
+pub struct IpV4Frame<T>
 where
     T: ByteStruct,
 {
@@ -80,19 +80,19 @@ where
     pub data: T,
 }
 
-impl<T> ByteStructLen for IpFrame<T>
+impl<T> ByteStructLen for IpV4Frame<T>
 where
     T: ByteStruct,
 {
     const BYTE_LEN: usize = IpV4Header::BYTE_LEN + T::BYTE_LEN;
 }
 
-impl<T> ByteStruct for IpFrame<T>
+impl<T> ByteStruct for IpV4Frame<T>
 where
     T: ByteStruct,
 {
     fn read_bytes(bytes: &[u8]) -> Self {
-        IpFrame::<T> {
+        IpV4Frame::<T> {
             header: IpV4Header::read_bytes(&bytes[0..IpV4Header::BYTE_LEN]),
             data: T::read_bytes(&bytes[IpV4Header::BYTE_LEN..]),
         }
@@ -104,7 +104,7 @@ where
     }
 }
 
-impl<T> IpFrame<T>
+impl<T> IpV4Frame<T>
 where
     T: ByteStruct,
 {
@@ -115,12 +115,9 @@ where
     }
 }
 
-/// Common choices of transport-layer protocols
-///
-/// and their IP header values.
+/// Common choices of transport-layer protocols and their IP header values.
 ///
 /// There are many more protocols not listed here -
-///
 /// see https://en.wikipedia.org/wiki/List_of_IP_protocol_numbers
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u8)]
@@ -165,9 +162,9 @@ impl Protocol {
     }
 }
 
-/// https://en.wikipedia.org/wiki/Differentiated_services
-///
-/// Priority 2 is low-latency class
+/// Type-of-Service for networks with differentiated services.
+/// 
+/// See https://en.wikipedia.org/wiki/Differentiated_services.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u8)]
 pub enum DSCP {

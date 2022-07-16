@@ -6,6 +6,9 @@
 #![feature(generic_const_exprs)]
 #![feature(test)]
 
+
+// While Deref implementations are usually a bad sign, we're only using them for 
+// a #[repr(transparent)] newtype here in order to avoid reimplementing array indexing.
 use core::ops::{Deref, DerefMut};
 
 #[cfg(feature = "panic_never")]
