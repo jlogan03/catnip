@@ -7,9 +7,21 @@ edition = "2021"
 
 [dependencies]
 catnip = {path="../../", features=["panic_never"]}
+# byte_struct = { path = "../../../byte-struct-rs/byte_struct" }
+byte_struct = "0.7.1"
 
 [profile.dev]
 panic = "abort"
+opt-level = "s"
+lto = true
+debug = true     # Include debugging flags & allow panic branches
+debug-assertions = true
+overflow-checks = true
 
 [profile.release]
 panic = "abort"
+opt-level = "s"  # Compiler optimization for minimum file size
+lto = true       # Use full link-time optimization to reduce file size
+debug = false
+debug-assertions = false
+overflow-checks = false

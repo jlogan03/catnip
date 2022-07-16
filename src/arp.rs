@@ -53,7 +53,8 @@ pub struct ArpPayload {
 }
 
 impl ArpPayload {
-    fn to_be_bytes(&self) -> [u8; Self::BYTE_LEN] {
+    /// Convert to big-endian byte array
+    pub fn to_be_bytes(&self) -> [u8; Self::BYTE_LEN] {
         let mut bytes = [0_u8; Self::BYTE_LEN];
         self.write_bytes(&mut bytes);
         bytes
@@ -101,7 +102,8 @@ impl ByteStruct for ArpOperation {
 }
 
 impl ArpOperation {
-    fn to_be_bytes(&self) -> [u8; Self::BYTE_LEN] {
+    /// Convert to big-endian byte array
+    pub fn to_be_bytes(&self) -> [u8; Self::BYTE_LEN] {
         (*self as u16).to_be_bytes()
     }
 }
@@ -149,10 +151,10 @@ mod tests {
 
     /// Build an ARP message and make sure the parser returns the same values from the input
     #[test]
-    fn test_parse_arp_msg() -> () {
+    fn test_serialization() -> () {
         let msg = build_dummy_msg();
         // Serialize
-        let bytes = msg.to_be_bytes();
+        let bytes: [u8; 28] = msg.to_be_bytes();
         // Deserialize
         let msg_parsed = ArpPayload::read_bytes(&bytes);
 
