@@ -6,8 +6,7 @@
 #![feature(generic_const_exprs)]
 #![feature(test)]
 
-
-// While Deref implementations are usually a bad sign, we're only using them for 
+// While Deref implementations are usually a bad sign, we're only using them for
 // a #[repr(transparent)] newtype here in order to avoid reimplementing array indexing.
 use core::ops::{Deref, DerefMut};
 
@@ -28,7 +27,7 @@ pub use ip::Protocol;
 /// Newtype for byte arrays in order to be able to implement traits on them
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(transparent)]
-pub struct ByteArray<const N: usize>([u8; N]);
+pub struct ByteArray<const N: usize>(pub [u8; N]);
 
 impl<const N: usize> Deref for ByteArray<N> {
     type Target = [u8; N];
@@ -63,7 +62,8 @@ impl<const N: usize> ByteStruct for ByteArray<N> {
 }
 
 impl<const N: usize> ByteArray<N> {
-    fn to_be_bytes(&self) -> [u8; N] {
+    /// Convert to big-endian byte array
+    pub fn to_be_bytes(&self) -> [u8; N] {
         *self.deref()
     }
 }
