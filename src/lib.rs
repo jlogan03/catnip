@@ -15,6 +15,7 @@ use panic_never as _;
 
 // use modular_bitfield::Specifier;
 pub use byte_struct::*;
+pub use modular_bitfield::prelude::*;
 
 pub mod arp; // Address Resolution Protocol - midlayer between internet and transport
 pub mod enet; // Link Layer

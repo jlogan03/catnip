@@ -3,6 +3,8 @@
 use crate::{IpV4Addr, DSCP, Protocol};
 
 use byte_struct::*;
+use modular_bitfield::prelude::*;
+
 
 /// IPV4 header per IETF-RFC-791
 ///
@@ -105,13 +107,39 @@ bitfields!(
     }
 );
 
-bitfields!(
-    /// Combined IP version and header length in a single byte
-    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-    pub VersionAndHeaderLength: u8 {
-        /// IP protocol version (4=>4, 6=>6, ...)
-        pub version: 4,
-        /// IP header length may be more than 20 if there is an Options segment
-        pub header_length: 4
+// bitfields!(
+//     /// Combined IP version and header length in a single byte
+//     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+//     pub VersionAndHeaderLength: u8 {
+//         /// IP protocol version (4=>4, 6=>6, ...)
+//         pub version: 4,
+//         /// IP header length may be more than 20 if there is an Options segment
+//         pub header_length: 4
+//     }
+// );
+
+
+/// Combined IP version and header length in a single byte
+#[bitfield(bits=8)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct VersionAndHeaderLength {
+    /// IP version number
+    pub version: B4,
+    /// Length of IP header in 32-bit words (usually 5 words, or 20 bytes)
+    pub header_length: B4
+}
+
+impl ByteStructLen for VersionAndHeaderLength {
+    const BYTE_LEN: usize = 1;
+}
+
+impl ByteStruct for VersionAndHeaderLength {
+    fn read_bytes(bytes: &[u8]) -> Self {
+        // All bit patterns are valid, so this will never error
+        VersionAndHeaderLength::from_bytes([bytes[0]])
     }
-);
+
+    fn write_bytes(&self, bytes: &mut [u8]) {
+        bytes[0] = self.into_bytes()[0];
+    }
+}

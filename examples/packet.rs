@@ -32,10 +32,7 @@ fn main() -> () {
         },
         data: IpV4Frame::<UdpFrame<ByteArray<8>>> {
             header: IpV4Header {
-                version_and_header_length: VersionAndHeaderLength {
-                    version: 4,
-                    header_length: IpV4Header::BYTE_LEN as u8,
-                },
+                version_and_header_length: VersionAndHeaderLength::new().with_version(4).with_header_length((IpV4Header::BYTE_LEN / 4) as u8),
                 dscp: DSCP::Standard,
                 total_length: IpV4Frame::<UdpFrame<ByteArray<8>>>::BYTE_LEN as u16,
                 identification: 0,
@@ -58,16 +55,6 @@ fn main() -> () {
         },
         checksum: 0_u32,
     };
-
-    let vhl = VersionAndHeaderLength {
-        version: 4,
-        header_length: IpV4Header::BYTE_LEN as u8,
-    };
-    let mut bytes = [0_u8; VersionAndHeaderLength::BYTE_LEN];
-    vhl.write_bytes_default_be(&mut bytes);
-    let vhl_parsed = VersionAndHeaderLength::read_bytes_default_be(&bytes);
-
-    assert_eq!(vhl, vhl_parsed);
 
     let bytes = frame.to_be_bytes();
     let frame_parsed = EthernetFrame::<IpV4Frame<UdpFrame<ByteArray<8>>>>::read_bytes(&bytes);
