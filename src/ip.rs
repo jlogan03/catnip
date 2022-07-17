@@ -4,7 +4,7 @@ use crate::{IpV4Addr, DSCP, Protocol};
 
 use byte_struct::*;
 use modular_bitfield::prelude::*;
-
+use static_assertions::const_assert;
 
 /// IPV4 header per IETF-RFC-791
 ///
@@ -13,7 +13,6 @@ use modular_bitfield::prelude::*;
 #[byte_struct_be]
 pub struct IpV4Header {
     /// Combined version and header length info in a single byte
-    #[byte_struct_le]
     pub version_and_header_length: VersionAndHeaderLength,
     /// Type of Service / Differentiated-Service
     pub dscp: DSCP,
@@ -34,6 +33,8 @@ pub struct IpV4Header {
     /// Destination IP address
     pub dst_ipaddr: IpV4Addr,
 }
+
+const_assert!(IpV4Header::BYTE_LEN == 20);
 
 impl IpV4Header {
     /// Pack into big-endian (network) byte array
