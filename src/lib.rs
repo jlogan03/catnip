@@ -16,9 +16,8 @@ use panic_never as _;
 pub use byte_struct::{ByteStruct, ByteStructLen};
 pub use modular_bitfield;
 
-
-pub mod arp; // Address Resolution Protocol - midlayer between internet and transport
 pub mod enet; // Link Layer
+pub mod arp; // Address Resolution Protocol - technically an internet layer
 pub mod ip; // Internet layer
 pub mod udp; // Transport layer // Address Resolution Protocol - not a distinct layer, but required for IP and UDP to function on most networks
 
