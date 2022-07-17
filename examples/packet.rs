@@ -4,7 +4,7 @@
 
 use catnip::{
     enet::{EthernetFrame, EthernetHeader},
-    ip::{Fragmentation, IpV4Frame, IpV4Header, VersionAndHeaderLength, DSCP},
+    ip::{Fragmentation, IpV4Frame, IpV4Header, VersionAndHeaderLength},
     udp::{UdpFrame, UdpHeader},
     *,
 };
@@ -32,7 +32,7 @@ fn main() -> () {
         },
         data: IpV4Frame::<UdpFrame<ByteArray<8>>> {
             header: IpV4Header {
-                version_and_length: VersionAndHeaderLength {
+                version_and_header_length: VersionAndHeaderLength {
                     version: 4,
                     header_length: IpV4Header::BYTE_LEN as u8,
                 },
@@ -58,6 +58,16 @@ fn main() -> () {
         },
         checksum: 0_u32,
     };
+
+    let vhl = VersionAndHeaderLength {
+        version: 4,
+        header_length: IpV4Header::BYTE_LEN as u8,
+    };
+    let mut bytes = [0_u8; VersionAndHeaderLength::BYTE_LEN];
+    vhl.write_bytes_default_be(&mut bytes);
+    let vhl_parsed = VersionAndHeaderLength::read_bytes_default_be(&bytes);
+
+    assert_eq!(vhl, vhl_parsed);
 
     let bytes = frame.to_be_bytes();
     let frame_parsed = EthernetFrame::<IpV4Frame<UdpFrame<ByteArray<8>>>>::read_bytes(&bytes);
