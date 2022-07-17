@@ -16,7 +16,7 @@ use crc32fast;
 /// value [6:11] dst macaddr  ([0xFF_u8; 6] when payload is IP packet)
 ///
 /// value [12:13] ethertype
-#[derive(ByteStruct, Clone, Copy, Debug)]
+#[derive(ByteStruct, Clone, Copy, Debug, PartialEq, Eq)]
 #[byte_struct_be]
 pub struct EthernetHeader {
     /// Destination MAC address
@@ -28,7 +28,8 @@ pub struct EthernetHeader {
 }
 
 impl EthernetHeader {
-    fn to_be_bytes(&self) -> [u8; Self::BYTE_LEN] {
+    /// Pack into big-endian (network) byte array
+    pub fn to_be_bytes(&self) -> [u8; Self::BYTE_LEN] {
         let mut bytes = [0_u8; Self::BYTE_LEN];
         self.write_bytes(&mut bytes);
         bytes
@@ -36,17 +37,17 @@ impl EthernetHeader {
 }
 
 /// Ethernet frame around arbitrary data
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct EthernetFrame<T>
 where
     T: ByteStruct,
 {
     /// Ethernet header
-    header: EthernetHeader,
+    pub header: EthernetHeader,
     /// Data payload (probably and IP frame or ARP message)
-    data: T,
+    pub data: T,
     /// CRC checksum
-    checksum: u32,
+    pub checksum: u32,
 }
 
 impl<T> ByteStructLen for EthernetFrame<T>
@@ -86,7 +87,8 @@ impl<T> EthernetFrame<T>
 where
     T: ByteStruct,
 {
-    fn to_be_bytes(&self) -> [u8; Self::BYTE_LEN] {
+    /// Pack into big-endian (network) byte array
+    pub fn to_be_bytes(&self) -> [u8; Self::BYTE_LEN] {
         let mut bytes = [0_u8; Self::BYTE_LEN];
         self.write_bytes(&mut bytes);
         bytes
@@ -156,7 +158,8 @@ impl ByteStruct for EtherType {
 }
 
 impl EtherType {
-    fn to_be_bytes(&self) -> [u8; Self::BYTE_LEN] {
+    /// Pack into big-endian (network) byte array
+    pub fn to_be_bytes(&self) -> [u8; Self::BYTE_LEN] {
         (*self as u16).to_be_bytes()
     }
 }

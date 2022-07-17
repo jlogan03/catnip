@@ -6,7 +6,7 @@ use byte_struct::*;
 
 bitfields!(
     /// Fragmentation flags and offset info
-    #[derive(Clone, Copy, Debug, Default)]
+    #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
     pub Fragmentation: u16 {
         unused: 1,
         /// Flag for routers to drop packets instead of fragmenting
@@ -20,7 +20,7 @@ bitfields!(
 
 bitfields!(
     /// Combined IP version and header length in a single byte
-    #[derive(Clone, Copy, Debug)]
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     pub VersionAndHeaderLength: u8 {
         /// IP protocol version (4=>4, 6=>6, ...)
         pub version: 4,
@@ -32,7 +32,7 @@ bitfields!(
 /// IPV4 header per IETF-RFC-791
 ///
 /// https://en.wikipedia.org/wiki/IPv4
-#[derive(ByteStruct, Clone, Copy, Debug)]
+#[derive(ByteStruct, Clone, Copy, Debug, PartialEq, Eq)]
 #[byte_struct_be]
 pub struct IpV4Header {
     /// Combined version and header length info in a single byte
@@ -69,7 +69,7 @@ impl IpV4Header {
 /// IPV4 frame with header and data.
 ///
 /// Data should be sized in a multiple of 4 bytes.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct IpV4Frame<T>
 where
     T: ByteStruct,

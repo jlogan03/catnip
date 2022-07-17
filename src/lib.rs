@@ -14,7 +14,7 @@ use core::ops::{Deref, DerefMut};
 use panic_never as _;
 
 // use modular_bitfield::Specifier;
-use byte_struct::*;
+pub use byte_struct::*;
 
 pub mod arp; // Address Resolution Protocol - midlayer between internet and transport
 pub mod enet; // Link Layer
@@ -50,7 +50,7 @@ impl<const N: usize> ByteStructLen for ByteArray<N> {
 impl<const N: usize> ByteStruct for ByteArray<N> {
     fn read_bytes(bytes: &[u8]) -> Self {
         let mut out = [0_u8; N];
-        out.copy_from_slice(bytes);
+        out.copy_from_slice(&bytes[0..N]);
         ByteArray(out)
     }
 

@@ -6,7 +6,7 @@ description = "Minimal UDP/IP ethernet stack for data acquisition on private net
 homepage = "https://github.com/jlogan03/catnip"
 repository = "https://github.com/jlogan03/catnip"
 readme = "./README.md"
-license-file = "./LICENSE-MIT"
+license = "MIT OR Apache-2.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

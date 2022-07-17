@@ -12,17 +12,17 @@ use byte_struct::*;
 /// value [2] total length in bytes [u16], header + data
 ///
 /// value [3] checksum [u16]
-#[derive(ByteStruct, Clone, Copy, Debug)]
+#[derive(ByteStruct, Clone, Copy, Debug, PartialEq, Eq)]
 #[byte_struct_be]
 pub struct UdpHeader {
     /// Source port
-    src_port: u16,
+    pub src_port: u16,
     /// Destination port
-    dst_port: u16,
+    pub dst_port: u16,
     /// Total frame length including header and data
-    length: u16,
+    pub length: u16,
     /// CRC checksum (rarely used for UDP, but must be present)
-    checksum: u16,
+    pub checksum: u16,
 }
 
 impl UdpHeader {
@@ -41,7 +41,7 @@ impl UdpHeader {
 }
 
 /// IPV4 message frame for UDP protocol.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct UdpFrame<T>
 where
     T: ByteStruct,
