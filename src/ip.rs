@@ -93,33 +93,41 @@ where
     }
 }
 
-bitfields!(
-    /// Fragmentation flags and offset info
-    #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-    pub Fragmentation: u16 {
-        unused: 1,
-        /// Flag for routers to drop packets instead of fragmenting
-        pub do_not_fragment: 1,
-        /// Flag that there are more fragments coming
-        pub more_fragments: 2,
-        /// Where we are in a set of fragments
-        pub offset: 13
+
+/// Fragmentation flags and offset info
+#[bitfield(bits=16)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct Fragmentation {
+    unused: B1,
+    /// Flag for routers to drop packets instead of fragmenting
+    pub do_not_fragment: B1,
+    /// Flag that there are more fragments coming
+    pub more_fragments: B1,
+    /// Where we are in a set of fragments
+    pub offset: B13    
+}
+
+impl ByteStructLen for Fragmentation {
+    const BYTE_LEN: usize = 2;
+}
+
+impl ByteStruct for Fragmentation {
+    fn read_bytes(bytes: &[u8]) -> Self {
+        // All bit patterns are valid, so this will never error
+        let mut bytes_to_read = [0_u8; Fragmentation::BYTE_LEN];
+        bytes_to_read.copy_from_slice(&bytes[0..=1]);
+        Fragmentation::from_bytes(bytes_to_read)
     }
-);
 
-// bitfields!(
-//     /// Combined IP version and header length in a single byte
-//     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-//     pub VersionAndHeaderLength: u8 {
-//         /// IP protocol version (4=>4, 6=>6, ...)
-//         pub version: 4,
-//         /// IP header length may be more than 20 if there is an Options segment
-//         pub header_length: 4
-//     }
-// );
+    fn write_bytes(&self, bytes: &mut [u8]) {
+        let bytes_to_write = self.into_bytes();
+        bytes[0] = bytes_to_write[0];
+        bytes[1] = bytes_to_write[1];
+    }
+}
 
 
-/// Combined IP version and header length in a single byte
+/// Combined IP version and header length in a single byte.
 #[bitfield(bits=8)]
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct VersionAndHeaderLength {

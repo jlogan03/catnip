@@ -4,12 +4,9 @@
 #![no_std]
 #![no_main]
 
-#[allow(unused_imports)]
-use catnip;
-
 #[no_mangle]
 pub fn _start() -> ! {
-    use byte_struct::*;
+    use catnip::*;
     use catnip::arp::{ArpOperation, ArpPayload};
     use catnip::{EtherType, IpV4Addr, MacAddr};
 
