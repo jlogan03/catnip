@@ -1,5 +1,6 @@
 //! Building this module successfully guarantees that the catnip library is no-std compatible
-//! and that it produces no panic branches (panic-never compatible)
+//! and that it produces no panic branches (panic-never compatible).
+//! However, not all tests can be run this way, because panic_never precludes the use of run-time assertions.
 
 #![no_std]
 #![no_main]
@@ -17,28 +18,22 @@ pub fn _start() -> ! {
 
 
 fn test_arp() -> () {
-    /// Build an ARP message and make sure the parser returns the same values from the input
-    let ptypei = EtherType::IPV4;
-    let operationi = ArpOperation::Request;
-    let shai = MacAddr::new([7_u8; 6]);
-    let spai = IpV4Addr::new([8_u8; 4]);
-    let thai = MacAddr::new([9_u8; 6]);
-    let tpai = IpV4Addr::new([10_u8; 4]);
+    // Build an ARP message and make sure the parser returns the same values from the input
     let msg = ArpPayload {
         htype: 1,
-        ptype: ptypei,
+        ptype: EtherType::IPV4,
         hlen: 6,
         plen: 4,
-        operation: operationi,
-        src_mac: shai,
-        src_ipaddr: spai,
-        dst_mac: thai,
-        dst_ipaddr: tpai,
+        operation: ArpOperation::Request,
+        src_mac: MacAddr::new([7_u8; 6]),
+        src_ipaddr: IpV4Addr::new([8_u8; 4]),
+        dst_mac: MacAddr::new([9_u8; 6]),
+        dst_ipaddr: IpV4Addr::new([10_u8; 4]),
     };
     // Serialize
     let bytes: [u8; 28] = msg.to_be_bytes();
     // Deserialize
-    let msg_parsed = ArpPayload::read_bytes(&bytes);
+    let _msg_parsed = ArpPayload::read_bytes(&bytes);
 }
 
 fn test_enet_ip_udp() -> () {
@@ -56,7 +51,7 @@ fn test_enet_ip_udp() -> () {
     // Some made-up data with two 32-bit words' worth of bytes
     let data: ByteArray<8> = ByteArray([0, 1, 2, 3, 4, 5, 6, 7]);
 
-    let mut frame = EthernetFrame::<IpV4Frame<UdpFrame<ByteArray<8>>>> {
+    let frame = EthernetFrame::<IpV4Frame<UdpFrame<ByteArray<8>>>> {
         header: EthernetHeader {
             dst_macaddr: dst_macaddr,
             src_macaddr: src_macaddr,
@@ -89,6 +84,6 @@ fn test_enet_ip_udp() -> () {
     };
 
     let bytes = frame.to_be_bytes();
-    let frame_parsed = EthernetFrame::<IpV4Frame<UdpFrame<ByteArray<8>>>>::read_bytes(&bytes);
+    let _frame_parsed = EthernetFrame::<IpV4Frame<UdpFrame<ByteArray<8>>>>::read_bytes(&bytes);
 
 }

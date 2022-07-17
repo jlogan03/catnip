@@ -23,6 +23,8 @@ use crate::{EtherType, IpV4Addr, MacAddr};
 
 use byte_struct::*;
 
+use static_assertions::const_assert;
+
 /// An ARP request or response with IPV4 addresses and standard MAC addresses.
 /// Assumes 6-byte standard MAC addresses and 4-byte IPV4 addresses; this function can't be as general as the parser
 /// because we need to know the size of the output at compile time.
@@ -108,51 +110,26 @@ impl ArpOperation {
     }
 }
 
+const_assert!(ArpPayload::BYTE_LEN == 28);
+
 #[cfg(test)]
 mod tests {
-    use super::{ArpPayload, ArpOperation};
-    use crate::{EtherType, IpV4Addr, MacAddr};
-    use byte_struct::*;
-
-    // extern crate std;
-    // use std::println;
-
-    fn build_dummy_msg() -> ArpPayload {
-        let ptypei = EtherType::IPV4;
-        let operationi = ArpOperation::Request;
-        let shai = MacAddr::new([7_u8; 6]);
-        let spai = IpV4Addr::new([8_u8; 4]);
-        let thai = MacAddr::new([9_u8; 6]);
-        let tpai = IpV4Addr::new([10_u8; 4]);
-        ArpPayload {
-            htype: 1,
-            ptype: ptypei,
-            hlen: 6,
-            plen: 4,
-            operation: operationi,
-            src_mac: shai,
-            src_ipaddr: spai,
-            dst_mac: thai,
-            dst_ipaddr: tpai
-        }
-    }
-
-    /// Make sure the ARP message builder doesn't generate any panic branches
-    #[test]
-    fn test_build_arp_msg_ipv4() {
-        let _ = build_dummy_msg();
-    }
-
-    /// Make sure it is the right size
-    #[test]
-    fn test_size() {
-        assert_eq!(ArpPayload::BYTE_LEN, 28)
-    }
+    use super::*;
 
     /// Build an ARP message and make sure the parser returns the same values from the input
     #[test]
-    fn test_serialization() -> () {
-        let msg = build_dummy_msg();
+    fn test_serialization_loop() -> () {
+        let msg = ArpPayload {
+            htype: 1,
+            ptype: EtherType::IPV4,
+            hlen: 6,
+            plen: 4,
+            operation: ArpOperation::Request,
+            src_mac: MacAddr::new([7_u8; 6]),
+            src_ipaddr: IpV4Addr::new([8_u8; 4]),
+            dst_mac: MacAddr::new([9_u8; 6]),
+            dst_ipaddr: IpV4Addr::new([10_u8; 4]),
+        };
         // Serialize
         let bytes: [u8; 28] = msg.to_be_bytes();
         // Deserialize
@@ -160,5 +137,4 @@ mod tests {
 
         assert_eq!(msg, msg_parsed);
     }
-
 }

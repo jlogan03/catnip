@@ -1,7 +1,5 @@
 //! Build a UDP/IP Ethernet packet and get its representation as network bytes
 
-// extern crate std; // To show debugging output
-
 use catnip::{
     enet::{EthernetFrame, EthernetHeader},
     ip::{Fragmentation, IpV4Frame, IpV4Header, VersionAndHeaderLength},
@@ -24,7 +22,7 @@ fn main() -> () {
     // Some made-up data with two 32-bit words' worth of bytes
     let data: ByteArray<8> = ByteArray([0, 1, 2, 3, 4, 5, 6, 7]);
 
-    let mut frame = EthernetFrame::<IpV4Frame<UdpFrame<ByteArray<8>>>> {
+    let frame = EthernetFrame::<IpV4Frame<UdpFrame<ByteArray<8>>>> {
         header: EthernetHeader {
             dst_macaddr: dst_macaddr,
             src_macaddr: src_macaddr,
