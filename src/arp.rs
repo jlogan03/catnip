@@ -19,7 +19,7 @@
 //! that address to itself. The success of that method requires that all devices on the network be configured to respond to ARP requests,
 //! which is not necessarily the case.
 
-use crate::{EtherType, IpV4Addr, MacAddr};
+use crate::{ByteArray, EtherType, IpV4Addr, MacAddr};
 
 use byte_struct::*;
 
@@ -52,9 +52,33 @@ pub struct ArpPayload {
     pub dst_mac: MacAddr,
     /// Destination IP address
     pub dst_ipaddr: IpV4Addr,
+    /// Pad to minimum message size
+    _padding: ByteArray<{ 64 - 28 }>,
 }
 
 impl ArpPayload {
+    /// Create a new ARP payload for IPV4 on ethernet
+    pub fn new(
+        src_mac: MacAddr,
+        src_ipaddr: IpV4Addr,
+        dst_mac: MacAddr,
+        dst_ipaddr: IpV4Addr,
+        operation: ArpOperation,
+    ) -> Self {
+        ArpPayload {
+            htype: 1,
+            ptype: EtherType::IPV4,
+            hlen: 6,
+            plen: 4,
+            operation: operation,
+            src_mac: src_mac,
+            src_ipaddr: src_ipaddr,
+            dst_mac: dst_mac,
+            dst_ipaddr: dst_ipaddr,
+            _padding: ByteArray([0_u8; 64 - 28]),
+        }
+    }
+
     /// Convert to big-endian byte array
     pub fn to_be_bytes(&self) -> [u8; Self::BYTE_LEN] {
         let mut bytes = [0_u8; Self::BYTE_LEN];
@@ -110,7 +134,7 @@ impl ArpOperation {
     }
 }
 
-const_assert!(ArpPayload::BYTE_LEN == 28);
+const_assert!(ArpPayload::BYTE_LEN == 64);
 
 #[cfg(test)]
 mod tests {
@@ -119,19 +143,15 @@ mod tests {
     /// Build an ARP message and make sure the parser returns the same values from the input
     #[test]
     fn test_serialization_loop() -> () {
-        let msg = ArpPayload {
-            htype: 1,
-            ptype: EtherType::IPV4,
-            hlen: 6,
-            plen: 4,
-            operation: ArpOperation::Request,
-            src_mac: MacAddr::new([7_u8; 6]),
-            src_ipaddr: IpV4Addr::new([8_u8; 4]),
-            dst_mac: MacAddr::new([9_u8; 6]),
-            dst_ipaddr: IpV4Addr::new([10_u8; 4]),
-        };
+        let msg = ArpPayload::new(
+            MacAddr::new([7_u8; 6]),
+            IpV4Addr::new([8_u8; 4]),
+            MacAddr::new([9_u8; 6]),
+            IpV4Addr::new([10_u8; 4]),
+            ArpOperation::Request,
+        );
         // Serialize
-        let bytes: [u8; 28] = msg.to_be_bytes();
+        let bytes: [u8; 64] = msg.to_be_bytes();
         // Deserialize
         let msg_parsed = ArpPayload::read_bytes(&bytes);
 

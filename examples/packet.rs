@@ -1,11 +1,6 @@
 //! Build a UDP/IP Ethernet packet and get its representation as network bytes
 
-use catnip::{
-    enet::{EthernetFrame, EthernetHeader},
-    ip::{Fragmentation, IpV4Frame, IpV4Header, VersionAndHeaderLength},
-    udp::{UdpFrame, UdpHeader},
-    *,
-};
+use catnip::*;
 
 fn main() -> () {
     // Some made-up addresses
