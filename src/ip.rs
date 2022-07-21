@@ -1,6 +1,6 @@
 //! Internet layer: Internet Protocol message header construction
 
-use crate::{IpV4Addr, DSCP, Protocol};
+use crate::{IpV4Addr, Protocol, DSCP};
 
 use byte_struct::*;
 use modular_bitfield::prelude::*;
@@ -95,9 +95,8 @@ where
     }
 }
 
-
 /// Fragmentation flags and offset info
-#[bitfield(bits=16)]
+#[bitfield(bits = 16)]
 #[derive(Clone, Copy, uDebug, Debug, Default, PartialEq, Eq)]
 pub struct Fragmentation {
     unused: B1,
@@ -106,7 +105,7 @@ pub struct Fragmentation {
     /// Flag that there are more fragments coming
     pub more_fragments: B1,
     /// Where we are in a set of fragments
-    pub offset: B13    
+    pub offset: B13,
 }
 
 impl ByteStructLen for Fragmentation {
@@ -128,15 +127,14 @@ impl ByteStruct for Fragmentation {
     }
 }
 
-
 /// Combined IP version and header length in a single byte.
-#[bitfield(bits=8)]
+#[bitfield(bits = 8)]
 #[derive(Clone, Copy, uDebug, Debug, Default, PartialEq, Eq)]
 pub struct VersionAndHeaderLength {
     /// IP version number
     pub version: B4,
     /// Length of IP header in 32-bit words (usually 5 words, or 20 bytes)
-    pub header_length: B4
+    pub header_length: B4,
 }
 
 impl ByteStructLen for VersionAndHeaderLength {

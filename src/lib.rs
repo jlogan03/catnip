@@ -76,7 +76,7 @@ impl uDebug for ByteArray<4> {
     where
         W: uWrite + ?Sized,
     {
-        <ByteArray<4> as uDebug>::fmt(&self, f)
+        <[u8; 4] as uDebug>::fmt(&self, f)
     }
 }
 
@@ -85,7 +85,7 @@ impl uDebug for ByteArray<6> {
     where
         W: uWrite + ?Sized,
     {
-        <ByteArray<6> as uDebug>::fmt(&self, f)
+        <[u8; 6] as uDebug>::fmt(&self, f)
     }
 }
 
