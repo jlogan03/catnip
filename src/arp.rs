@@ -21,8 +21,8 @@
 
 use crate::{ByteArray, EtherType, IpV4Addr, MacAddr};
 
+use ufmt::{uDebug, uDisplay, uWrite, derive::uDebug};
 use byte_struct::*;
-
 use static_assertions::const_assert;
 
 /// An ARP request or response with IPV4 addresses and standard MAC addresses.
@@ -31,7 +31,7 @@ use static_assertions::const_assert;
 /// See https://en.wikipedia.org/wiki/Address_Resolution_Protocol .
 ///
 /// Hardware type is 1 for ethernet.
-#[derive(ByteStruct, Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(ByteStruct, Clone, Copy, uDebug, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[byte_struct_be]
 pub struct ArpPayload {
     /// Hardware type (1 for ethernet)
@@ -88,7 +88,7 @@ impl ArpPayload {
 }
 
 /// ARP request or response flag values
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, uDebug, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u16)]
 pub enum ArpOperation {
     /// This is a request to confirm target IP address and acquire associated MAC address
@@ -135,6 +135,17 @@ impl ArpOperation {
 }
 
 const_assert!(ArpPayload::BYTE_LEN == 64);
+
+type ArpPadding = ByteArray<{ 64 - 28 }>;
+
+impl uDebug for ArpPadding {
+    fn fmt<W>(&self, f: &mut ufmt::Formatter<'_, W>) -> Result<(), W::Error>
+    where
+        W: uWrite + ?Sized,
+    {
+        Ok(())  // Do nothing, we do not want to spend time formatting padding
+    }
+}
 
 #[cfg(test)]
 mod tests {

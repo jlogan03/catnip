@@ -2,6 +2,7 @@
 
 use crate::ip::IpV4Header;
 use byte_struct::*;
+pub use ufmt::derive::uDebug;
 
 /// UDP datagram header structure like
 ///
@@ -12,7 +13,7 @@ use byte_struct::*;
 /// value [2] total length in bytes [u16], header + data
 ///
 /// value [3] checksum [u16]
-#[derive(ByteStruct, Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(ByteStruct, Clone, Copy, uDebug, Debug, PartialEq, Eq)]
 #[byte_struct_be]
 pub struct UdpHeader {
     /// Source port
@@ -41,7 +42,7 @@ impl UdpHeader {
 }
 
 /// IPV4 message frame for UDP protocol.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, uDebug, Debug, PartialEq, Eq)]
 pub struct UdpFrame<T>
 where
     T: ByteStruct,

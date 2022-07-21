@@ -15,11 +15,17 @@ use panic_never as _;
 
 pub use byte_struct::{ByteStruct, ByteStructLen};
 pub use modular_bitfield;
+pub use ufmt::{uDebug, uDisplay, uWrite, derive::uDebug};
 
-pub mod enet; // Link Layer
 pub mod arp; // Address Resolution Protocol - technically an internet layer
+pub mod enet; // Link Layer
 pub mod ip; // Internet layer
 pub mod udp; // Transport layer // Address Resolution Protocol - not a distinct layer, but required for IP and UDP to function on most networks
+
+pub use arp::*;
+pub use enet::*;
+pub use ip::*;
+pub use udp::*;
 
 /// Newtype for byte arrays in order to be able to implement traits on them
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -65,6 +71,24 @@ impl<const N: usize> ByteArray<N> {
     }
 }
 
+impl uDebug for ByteArray<4> {
+    fn fmt<W>(&self, f: &mut ufmt::Formatter<'_, W>) -> Result<(), W::Error>
+    where
+        W: uWrite + ?Sized,
+    {
+        <ByteArray<4> as uDebug>::fmt(&self, f)
+    }
+}
+
+impl uDebug for ByteArray<6> {
+    fn fmt<W>(&self, f: &mut ufmt::Formatter<'_, W>) -> Result<(), W::Error>
+    where
+        W: uWrite + ?Sized,
+    {
+        <ByteArray<6> as uDebug>::fmt(&self, f)
+    }
+}
+
 /// Standard 6-byte MAC address
 ///
 /// Split 24/24 format, Block ID | Device ID
@@ -104,7 +128,7 @@ impl IpV4Addr {
 /// EtherType tag values (incomplete list - there are many more not implemented here)
 ///
 /// See https://en.wikipedia.org/wiki/EtherType
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, uDebug, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u16)]
 pub enum EtherType {
     /// IPV4
@@ -174,7 +198,7 @@ impl EtherType {
 ///
 /// There are many more protocols not listed here -
 /// see https://en.wikipedia.org/wiki/List_of_IP_protocol_numbers
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, uDebug, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u8)]
 pub enum Protocol {
     /// Transmission Control Protocol
@@ -220,7 +244,7 @@ impl Protocol {
 /// Type-of-Service for networks with differentiated services.
 ///
 /// See https://en.wikipedia.org/wiki/Differentiated_services.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, uDebug, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u8)]
 pub enum DSCP {
     /// Standard is almost always fine
@@ -262,12 +286,6 @@ impl DSCP {
         (*self as u8).to_be_bytes()
     }
 }
-
-// Re-export for convenience
-pub use arp::*;
-pub use enet::*;
-pub use ip::*;
-pub use udp::*;
 
 /// Calculate IP checksum per IETF-RFC-768
 /// following implementation guide in IETF-RFC-1071 section 4.1 .

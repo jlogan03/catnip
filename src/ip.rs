@@ -5,11 +5,12 @@ use crate::{IpV4Addr, DSCP, Protocol};
 use byte_struct::*;
 use modular_bitfield::prelude::*;
 use static_assertions::const_assert;
+use ufmt::derive::uDebug;
 
 /// IPV4 header per IETF-RFC-791
 ///
 /// https://en.wikipedia.org/wiki/IPv4
-#[derive(ByteStruct, Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(ByteStruct, Clone, Copy, uDebug, Debug, PartialEq, Eq)]
 #[byte_struct_be]
 pub struct IpV4Header {
     /// Combined version and header length info in a single byte
@@ -48,7 +49,7 @@ impl IpV4Header {
 /// IPV4 frame with header and data.
 ///
 /// Data should be sized in a multiple of 4 bytes.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, uDebug, Debug, PartialEq, Eq)]
 pub struct IpV4Frame<T>
 where
     T: ByteStruct,
@@ -97,7 +98,7 @@ where
 
 /// Fragmentation flags and offset info
 #[bitfield(bits=16)]
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, uDebug, Debug, Default, PartialEq, Eq)]
 pub struct Fragmentation {
     unused: B1,
     /// Flag for routers to drop packets instead of fragmenting
@@ -130,7 +131,7 @@ impl ByteStruct for Fragmentation {
 
 /// Combined IP version and header length in a single byte.
 #[bitfield(bits=8)]
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, uDebug, Debug, Default, PartialEq, Eq)]
 pub struct VersionAndHeaderLength {
     /// IP version number
     pub version: B4,

@@ -2,9 +2,10 @@
 //!
 //! Diagram at https://en.wikipedia.org/wiki/Ethernet_frame#Ethernet_II
 
-use crate::{MacAddr, EtherType};
+use crate::{EtherType, MacAddr};
 
 use byte_struct::*;
+pub use ufmt::derive::uDebug;
 
 #[cfg(feature = "crc")]
 use crc32fast;
@@ -16,7 +17,7 @@ use crc32fast;
 /// value [6:11] dst macaddr  ([0xFF_u8; 6] when payload is IP packet)
 ///
 /// value [12:13] ethertype
-#[derive(ByteStruct, Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(ByteStruct, Clone, Copy, uDebug, Debug, PartialEq, Eq)]
 #[byte_struct_be]
 pub struct EthernetHeader {
     /// Destination MAC address
@@ -37,7 +38,7 @@ impl EthernetHeader {
 }
 
 /// Ethernet frame around arbitrary data
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, uDebug, Debug, PartialEq, Eq)]
 pub struct EthernetFrame<T>
 where
     T: ByteStruct,
