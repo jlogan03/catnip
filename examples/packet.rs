@@ -11,8 +11,8 @@ fn main() -> () {
     let dst_macaddr: MacAddr = MacAddr::ANY;
     let src_port: u16 = 8123;
     let dst_port: u16 = 8125;
-    let src_ipaddr: IpV4Addr = IpV4Addr::new([10, 0, 0, 1]);
-    let dst_ipaddr: IpV4Addr = IpV4Addr::new([10, 0, 0, 2]);
+    let src_ipaddr: IpV4Addr = IpV4Addr::new([10, 0, 0, 120]);
+    let dst_ipaddr: IpV4Addr = IpV4Addr::new([10, 0, 0, 121]);
 
     // Some made-up data with two 32-bit words' worth of bytes
     let data: ByteArray<8> = ByteArray([0, 1, 2, 3, 4, 5, 6, 7]);
@@ -21,7 +21,7 @@ fn main() -> () {
         header: EthernetHeader {
             dst_macaddr: dst_macaddr,
             src_macaddr: src_macaddr,
-            ethertype: EtherType::IPV4,
+            ethertype: EtherType::IpV4,
         },
         data: IpV4Frame::<UdpFrame<ByteArray<8>>> {
             header: IpV4Header {
@@ -31,7 +31,7 @@ fn main() -> () {
                 identification: 0,
                 fragmentation: Fragmentation::default(),
                 time_to_live: 10,
-                protocol: Protocol::UDP,
+                protocol: Protocol::Udp,
                 checksum: 0,
                 src_ipaddr: src_ipaddr,
                 dst_ipaddr: dst_ipaddr,

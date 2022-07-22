@@ -215,7 +215,7 @@ mod tests {
             ArpOperation::Request,
         );
         // Serialize
-        let bytes: [u8; 64] = msg.to_be_bytes();
+        let bytes: [u8; ArpPayload::BYTE_LEN] = msg.to_be_bytes();
         // Deserialize
         let msg_parsed = ArpPayload::read_bytes(&bytes);
 

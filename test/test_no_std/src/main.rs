@@ -5,7 +5,7 @@
 #![no_std]
 #![no_main]
 
-use catnip::{*, udp::*, ip::*, enet::*, arp::*};
+use catnip::*;
 
 #[no_mangle]
 pub fn _start() -> ! {
@@ -19,19 +19,15 @@ pub fn _start() -> ! {
 
 fn test_arp() -> () {
     // Build an ARP message and make sure the parser returns the same values from the input
-    let msg = ArpPayload {
-        htype: 1,
-        ptype: EtherType::IPV4,
-        hlen: 6,
-        plen: 4,
-        operation: ArpOperation::Request,
-        src_mac: MacAddr::new([7_u8; 6]),
-        src_ipaddr: IpV4Addr::new([8_u8; 4]),
-        dst_mac: MacAddr::new([9_u8; 6]),
-        dst_ipaddr: IpV4Addr::new([10_u8; 4]),
-    };
+    let msg = ArpPayload::new(
+        MacAddr::new([7_u8; 6]),
+        IpV4Addr::new([8_u8; 4]),
+        MacAddr::new([9_u8; 6]),
+        IpV4Addr::new([10_u8; 4]),
+        ArpOperation::Request,
+    );
     // Serialize
-    let bytes: [u8; 28] = msg.to_be_bytes();
+    let bytes: [u8; ArpPayload::BYTE_LEN] = msg.to_be_bytes();
     // Deserialize
     let _msg_parsed = ArpPayload::read_bytes(&bytes);
 }
@@ -55,7 +51,7 @@ fn test_enet_ip_udp() -> () {
         header: EthernetHeader {
             dst_macaddr: dst_macaddr,
             src_macaddr: src_macaddr,
-            ethertype: EtherType::IPV4,
+            ethertype: EtherType::IpV4,
         },
         data: IpV4Frame::<UdpFrame<ByteArray<8>>> {
             header: IpV4Header {
@@ -65,7 +61,7 @@ fn test_enet_ip_udp() -> () {
                 identification: 0,
                 fragmentation: Fragmentation::default(),
                 time_to_live: 10,
-                protocol: Protocol::UDP,
+                protocol: Protocol::Udp,
                 checksum: 0,
                 src_ipaddr: src_ipaddr,
                 dst_ipaddr: dst_ipaddr,
