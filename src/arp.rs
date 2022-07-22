@@ -19,11 +19,13 @@
 //! that address to itself. The success of that method requires that all devices on the network be configured to respond to ARP requests,
 //! which is not necessarily the case.
 
-use crate::{ByteArray, EtherType, IpV4Addr, MacAddr};
+use crate::*;
 
-use ufmt::{uDebug, uDisplay, uWrite, derive::uDebug};
+use ufmt::derive::uDebug;
 use byte_struct::*;
 use static_assertions::const_assert;
+
+const_assert!(ArpPayload::BYTE_LEN == 64);  // Make sure the ARP frame is at least sized for the minimum ethernet payload
 
 /// An ARP request or response with IPV4 addresses and standard MAC addresses.
 /// Assumes 6-byte standard MAC addresses and 4-byte IPV4 addresses; this function can't be as general as the parser
@@ -53,7 +55,7 @@ pub struct ArpPayload {
     /// Destination IP address
     pub dst_ipaddr: IpV4Addr,
     /// Pad to minimum message size
-    _padding: ByteArray<{ 64 - 28 }>,
+    _padding: [u32; 9],
 }
 
 impl ArpPayload {
@@ -66,8 +68,8 @@ impl ArpPayload {
         operation: ArpOperation,
     ) -> Self {
         ArpPayload {
-            htype: 1,
-            ptype: EtherType::IPV4,
+            htype: 1,  // Always on ethernet
+            ptype: EtherType::IpV4,  // Always resolving an IPV4 address
             hlen: 6,
             plen: 4,
             operation: operation,
@@ -75,7 +77,7 @@ impl ArpPayload {
             src_ipaddr: src_ipaddr,
             dst_mac: dst_mac,
             dst_ipaddr: dst_ipaddr,
-            _padding: ByteArray([0_u8; 64 - 28]),
+            _padding: [0_u32; 9],
         }
     }
 
@@ -131,19 +133,6 @@ impl ArpOperation {
     /// Convert to big-endian byte array
     pub fn to_be_bytes(&self) -> [u8; Self::BYTE_LEN] {
         (*self as u16).to_be_bytes()
-    }
-}
-
-const_assert!(ArpPayload::BYTE_LEN == 64);
-
-type ArpPadding = ByteArray<{ 64 - 28 }>;
-
-impl uDebug for ArpPadding {
-    fn fmt<W>(&self, f: &mut ufmt::Formatter<'_, W>) -> Result<(), W::Error>
-    where
-        W: uWrite + ?Sized,
-    {
-        Ok(())  // Do nothing, we do not want to spend time formatting padding
     }
 }
 

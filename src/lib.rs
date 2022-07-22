@@ -6,10 +6,6 @@
 #![feature(generic_const_exprs)]
 #![feature(test)]
 
-// While Deref implementations are usually a bad sign, we're only using them for
-// a #[repr(transparent)] newtype here in order to avoid reimplementing array indexing.
-use core::ops::{Deref, DerefMut};
-
 #[cfg(feature = "panic_never")]
 use panic_never as _;
 
@@ -20,7 +16,7 @@ pub use ufmt::{uDebug, uDisplay, uWrite, derive::uDebug};
 pub mod arp; // Address Resolution Protocol - technically an internet layer
 pub mod enet; // Link Layer
 pub mod ip; // Internet layer
-pub mod udp; // Transport layer // Address Resolution Protocol - not a distinct layer, but required for IP and UDP to function on most networks
+pub mod udp; // Transport layer // Address Resolution Protocol - not a distinct layer, but required for IP and Udp to function on most networks
 
 pub use arp::*;
 pub use enet::*;
@@ -31,20 +27,6 @@ pub use udp::*;
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(transparent)]
 pub struct ByteArray<const N: usize>(pub [u8; N]);
-
-impl<const N: usize> Deref for ByteArray<N> {
-    type Target = [u8; N];
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl<const N: usize> DerefMut for ByteArray<N> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
 
 impl<const N: usize> ByteStructLen for ByteArray<N> {
     const BYTE_LEN: usize = N;
@@ -59,7 +41,7 @@ impl<const N: usize> ByteStruct for ByteArray<N> {
 
     fn write_bytes(&self, bytes: &mut [u8]) {
         for i in 0..N {
-            bytes[i] = self[i];
+            bytes[i] = self.0[i];
         }
     }
 }
@@ -67,7 +49,7 @@ impl<const N: usize> ByteStruct for ByteArray<N> {
 impl<const N: usize> ByteArray<N> {
     /// Convert to big-endian byte array
     pub fn to_be_bytes(&self) -> [u8; N] {
-        *self.deref()
+        self.0
     }
 }
 
@@ -76,7 +58,7 @@ impl uDebug for ByteArray<4> {
     where
         W: uWrite + ?Sized,
     {
-        <[u8; 4] as uDebug>::fmt(&self, f)
+        <[u8; 4] as uDebug>::fmt(&self.0, f)
     }
 }
 
@@ -85,7 +67,7 @@ impl uDebug for ByteArray<6> {
     where
         W: uWrite + ?Sized,
     {
-        <[u8; 6] as uDebug>::fmt(&self, f)
+        <[u8; 6] as uDebug>::fmt(&self.0, f)
     }
 }
 
@@ -121,77 +103,11 @@ impl IpV4Addr {
     /// Broadcast address (all ones)
     pub const BROADCAST: IpV4Addr = ByteArray([0xFF_u8; 4]);
 
+    /// LAN broadcast address (all ones)
+    pub const BROADCAST_LOCAL: IpV4Addr = ByteArray([0x0, 0x0, 0x0, 0xFF]);
+
     /// Any address (all zeroes)
     pub const ANY: IpV4Addr = ByteArray([0x0_u8; 4]);
-}
-
-/// EtherType tag values (incomplete list - there are many more not implemented here)
-///
-/// See https://en.wikipedia.org/wiki/EtherType
-#[derive(Clone, Copy, uDebug, Debug, PartialEq, Eq, PartialOrd, Ord)]
-#[repr(u16)]
-pub enum EtherType {
-    /// IPV4
-    IPV4 = 0x0800,
-    /// ARP
-    ARP = 0x0806,
-    /// VLAN - if this tag is encountered, then this is not the real ethertype field, and we're reading an 802.1Q VLAN tag instead
-    VLAN = 0x8100,
-    /// IPV6
-    IPV6 = 0x86DD,
-    /// EtherCat
-    EtherCat = 0x88A4,
-    /// Precision Time Protocol
-    PTP = 0x88A7,
-    /// Catch-all for uncommon types not handled here
-    Unimplemented,
-}
-
-impl From<u16> for EtherType {
-    fn from(value: u16) -> Self {
-        match value {
-            x if x == EtherType::ARP as u16 => EtherType::ARP,
-            x if x == EtherType::EtherCat as u16 => EtherType::EtherCat,
-            x if x == EtherType::IPV4 as u16 => EtherType::IPV4,
-            x if x == EtherType::IPV6 as u16 => EtherType::IPV6,
-            x if x == EtherType::PTP as u16 => EtherType::PTP,
-            x if x == EtherType::VLAN as u16 => EtherType::VLAN,
-            _ => EtherType::Unimplemented,
-        }
-    }
-}
-
-impl ByteStructLen for EtherType {
-    const BYTE_LEN: usize = 2;
-}
-
-impl ByteStruct for EtherType {
-    fn read_bytes(bytes: &[u8]) -> Self {
-        if bytes.len() < 2 {
-            return EtherType::Unimplemented;
-        } else {
-            let mut bytes_read = [0_u8; 2];
-            bytes_read.copy_from_slice(&bytes[0..=1]);
-            return EtherType::from(u16::from_be_bytes(bytes_read));
-        }
-    }
-
-    fn write_bytes(&self, bytes: &mut [u8]) {
-        if bytes.len() >= 2 {
-            let bytes_to_write = (*self as u16).to_be_bytes();
-            bytes[0] = bytes_to_write[0];
-            bytes[1] = bytes_to_write[1];
-        } else {
-            // Do nothing - no bytes to write
-        }
-    }
-}
-
-impl EtherType {
-    /// Pack into big-endian (network) byte array
-    pub fn to_be_bytes(&self) -> [u8; Self::BYTE_LEN] {
-        (*self as u16).to_be_bytes()
-    }
 }
 
 /// Common choices of transport-layer protocols and their IP header values.
@@ -202,9 +118,9 @@ impl EtherType {
 #[repr(u8)]
 pub enum Protocol {
     /// Transmission Control Protocol
-    TCP = 0x06,
+    Tcp = 0x06,
     /// User Datagram Protocol
-    UDP = 0x11,
+    Udp = 0x11,
     /// Unimplemented
     Unimplemented,
 }
@@ -215,23 +131,15 @@ impl ByteStructLen for Protocol {
 
 impl ByteStruct for Protocol {
     fn read_bytes(bytes: &[u8]) -> Self {
-        if bytes.len() < 1 {
-            return Protocol::Unimplemented;
-        } else {
-            return match bytes[0] {
-                x if x == (Protocol::TCP as u8) => Protocol::TCP,
-                x if x == (Protocol::UDP as u8) => Protocol::UDP,
-                _ => Protocol::Unimplemented,
-            };
-        }
+        return match bytes[0] {
+            x if x == (Protocol::Tcp as u8) => Protocol::Tcp,
+            x if x == (Protocol::Udp as u8) => Protocol::Udp,
+            _ => Protocol::Unimplemented,
+        };
     }
 
     fn write_bytes(&self, bytes: &mut [u8]) {
-        if bytes.len() >= 1 {
-            bytes[0] = *self as u8;
-        } else {
-            // Do nothing - no bytes to write
-        }
+        bytes[0] = *self as u8;
     }
 }
 
@@ -261,29 +169,83 @@ impl ByteStructLen for DSCP {
 
 impl ByteStruct for DSCP {
     fn read_bytes(bytes: &[u8]) -> Self {
-        if bytes.len() < 1 {
-            return DSCP::Unimplemented;
-        } else {
-            return match bytes[0] {
-                x if x == (DSCP::Standard as u8) => DSCP::Standard,
-                x if x == (DSCP::Realtime as u8) => DSCP::Realtime,
-                _ => DSCP::Unimplemented,
-            };
-        }
+        return match bytes[0] {
+            x if x == (DSCP::Standard as u8) => DSCP::Standard,
+            x if x == (DSCP::Realtime as u8) => DSCP::Realtime,
+            _ => DSCP::Unimplemented,
+        };
     }
 
     fn write_bytes(&self, bytes: &mut [u8]) {
-        if bytes.len() >= 1 {
-            bytes[0] = *self as u8;
-        } else {
-            // Do nothing - no bytes to write
-        }
+        bytes[0] = *self as u8;
     }
 }
 
 impl DSCP {
     fn to_be_bytes(&self) -> [u8; Self::BYTE_LEN] {
         (*self as u8).to_be_bytes()
+    }
+}
+
+/// EtherType tag values (incomplete list - there are many more not implemented here)
+///
+/// See https://en.wikipedia.org/wiki/EtherType
+#[derive(Clone, Copy, uDebug, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[repr(u16)]
+pub enum EtherType {
+    /// Internet protocol version 4
+    IpV4 = 0x0800,
+    /// Address resolution protocol
+    Arp = 0x0806,
+    /// Tagged virtual LAN - if this tag is encountered, then this is not the real ethertype field, and we're reading an 802.1Q Vlan tag instead
+    /// This crate does not support tagged Vlan, which is a trust-based and inefficient system. Untagged Vlan should be used instead.
+    Vlan = 0x8100,
+    /// Internet protocol version 6
+    IpV6 = 0x86DD,
+    /// EtherCat
+    EtherCat = 0x88A4,
+    /// Precision Time Protocol
+    Ptp = 0x88A7,
+    /// Catch-all for uncommon types not handled here
+    Unimplemented = 0x0,
+}
+
+impl From<u16> for EtherType {
+    fn from(value: u16) -> Self {
+        match value {
+            x if x == EtherType::Arp as u16 => EtherType::Arp,
+            x if x == EtherType::EtherCat as u16 => EtherType::EtherCat,
+            x if x == EtherType::IpV4 as u16 => EtherType::IpV4,
+            x if x == EtherType::IpV6 as u16 => EtherType::IpV6,
+            x if x == EtherType::Ptp as u16 => EtherType::Ptp,
+            x if x == EtherType::Vlan as u16 => EtherType::Vlan,
+            _ => EtherType::Unimplemented,
+        }
+    }
+}
+
+impl ByteStructLen for EtherType {
+    const BYTE_LEN: usize = 2;
+}
+
+impl ByteStruct for EtherType {
+    fn read_bytes(bytes: &[u8]) -> Self {
+        let mut bytes_read = [0_u8; 2];
+        bytes_read.copy_from_slice(&bytes[0..=1]);
+        return EtherType::from(u16::from_be_bytes(bytes_read));
+    }
+
+    fn write_bytes(&self, bytes: &mut [u8]) {
+        let bytes_to_write = (*self as u16).to_be_bytes();
+        bytes[0] = bytes_to_write[0];
+        bytes[1] = bytes_to_write[1];
+    }
+}
+
+impl EtherType {
+    /// Pack into big-endian (network) byte array
+    pub fn to_be_bytes(&self) -> [u8; Self::BYTE_LEN] {
+        (*self as u16).to_be_bytes()
     }
 }
 

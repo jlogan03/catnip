@@ -2,7 +2,7 @@
 //!
 //! Diagram at https://en.wikipedia.org/wiki/Ethernet_frame#Ethernet_II
 
-use crate::{EtherType, MacAddr};
+use crate::{MacAddr, EtherType};
 
 use byte_struct::*;
 pub use ufmt::derive::uDebug;
@@ -24,7 +24,7 @@ pub struct EthernetHeader {
     pub dst_macaddr: MacAddr,
     /// Source MAC address
     pub src_macaddr: MacAddr,
-    /// Type of content (IPV4, IPV6, ARP, PTP, etc)
+    /// Type of content (IpV4, IpV6, Arp, Ptp, etc)
     pub ethertype: EtherType,
 }
 
@@ -45,7 +45,7 @@ where
 {
     /// Ethernet header
     pub header: EthernetHeader,
-    /// Data payload (probably and IP frame or ARP message)
+    /// Data payload (probably and IP frame or Arp message)
     pub data: T,
     /// CRC checksum
     pub checksum: u32,
@@ -95,6 +95,7 @@ where
         bytes
     }
 }
+
 
 // Calculate ethernet checksum in software
 // #[cfg(feature = "crc")]

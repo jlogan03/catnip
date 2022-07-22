@@ -11,8 +11,7 @@ license = "MIT OR Apache-2.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-# byte_struct = "0.7.1"
-byte_struct = { path = "../byte-struct-rs/byte_struct" }
+byte_struct = "0.8.0"
 modular-bitfield = "0.11.2"
 static_assertions = "1.1.0"
 ufmt = "0.1.0"
