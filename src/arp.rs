@@ -56,8 +56,7 @@ pub struct ArpPayload {
     pub dst_ipaddr: IpV4Addr,
     /// Pad to minimum frame size
     _pad0: u128,
-    // _pad1: u32,
-    _pad2: u16
+    _pad1: u16
 }
 
 impl ArpPayload {
@@ -80,8 +79,7 @@ impl ArpPayload {
             dst_mac: dst_mac,
             dst_ipaddr: dst_ipaddr,
             _pad0: 0,
-            // _pad1: 0,
-            _pad2: 0
+            _pad1: 0
         }
     }
 
@@ -92,9 +90,6 @@ impl ArpPayload {
         bytes
     }
 }
-
-/// 22 bytes of padding for Arp messages
-
 
 /// ARP request or response flag values
 #[derive(Clone, Copy, uDebug, Debug, PartialEq, Eq, PartialOrd, Ord)]
