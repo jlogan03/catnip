@@ -25,7 +25,7 @@ use ufmt::derive::uDebug;
 use byte_struct::*;
 use static_assertions::const_assert;
 
-const_assert!(ArpPayload::BYTE_LEN == 64);  // Make sure the ARP frame is at least sized for the minimum ethernet payload
+const_assert!(ArpPayload::BYTE_LEN == 46);  // Make sure the ARP frame is at least sized for the minimum ethernet payload
 
 /// An ARP request or response with IPV4 addresses and standard MAC addresses.
 /// Assumes 6-byte standard MAC addresses and 4-byte IPV4 addresses; this function can't be as general as the parser
@@ -39,7 +39,7 @@ pub struct ArpPayload {
     /// Hardware type (1 for ethernet)
     pub htype: u16,
     /// Protocol type (same as ethertype from ethernet header)
-    pub ptype: EtherType,
+    pub ptype: ProtocolType,
     /// Hardware address length (6 for standard MAC)
     pub hlen: u8,
     /// Protocol address length (4 for IPV4)
@@ -54,8 +54,10 @@ pub struct ArpPayload {
     pub dst_mac: MacAddr,
     /// Destination IP address
     pub dst_ipaddr: IpV4Addr,
-    /// Pad to minimum message size
-    _padding: [u32; 9],
+    /// Pad to minimum frame size
+    _pad0: u128,
+    // _pad1: u32,
+    _pad2: u16
 }
 
 impl ArpPayload {
@@ -69,7 +71,7 @@ impl ArpPayload {
     ) -> Self {
         ArpPayload {
             htype: 1,  // Always on ethernet
-            ptype: EtherType::IpV4,  // Always resolving an IPV4 address
+            ptype: ProtocolType::IpV4,  // Always resolving an IPV4 address
             hlen: 6,
             plen: 4,
             operation: operation,
@@ -77,7 +79,9 @@ impl ArpPayload {
             src_ipaddr: src_ipaddr,
             dst_mac: dst_mac,
             dst_ipaddr: dst_ipaddr,
-            _padding: [0_u32; 9],
+            _pad0: 0,
+            // _pad1: 0,
+            _pad2: 0
         }
     }
 
@@ -88,6 +92,9 @@ impl ArpPayload {
         bytes
     }
 }
+
+/// 22 bytes of padding for Arp messages
+
 
 /// ARP request or response flag values
 #[derive(Clone, Copy, uDebug, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -131,6 +138,68 @@ impl ByteStruct for ArpOperation {
 
 impl ArpOperation {
     /// Convert to big-endian byte array
+    pub fn to_be_bytes(&self) -> [u8; Self::BYTE_LEN] {
+        (*self as u16).to_be_bytes()
+    }
+}
+
+/// Protocol Type flags are the same as EtherType but must be reimplemented to avoid run-time recursion
+///
+/// See https://en.wikipedia.org/wiki/EtherType
+#[derive(Clone, Copy, uDebug, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[repr(u16)]
+pub enum ProtocolType {
+    /// Internet protocol version 4
+    IpV4 = 0x0800,
+    /// Address resolution protocol
+    Arp = 0x0806,
+    /// Tagged virtual LAN - if this tag is encountered, then this is not the real ethertype field, and we're reading an 802.1Q Vlan tag instead
+    /// This crate does not support tagged Vlan, which is a trust-based and inefficient system. Untagged Vlan should be used instead.
+    Vlan = 0x8100,
+    /// Internet protocol version 6
+    IpV6 = 0x86DD,
+    /// EtherCat
+    EtherCat = 0x88A4,
+    /// Precision Time Protocol
+    Ptp = 0x88A7,
+    /// Catch-all for uncommon types not handled here
+    Unimplemented = 0x0,
+}
+
+impl From<u16> for ProtocolType {
+    fn from(value: u16) -> Self {
+        match value {
+            x if x == ProtocolType::Arp as u16 => ProtocolType::Arp,
+            x if x == ProtocolType::EtherCat as u16 => ProtocolType::EtherCat,
+            x if x == ProtocolType::IpV4 as u16 => ProtocolType::IpV4,
+            x if x == ProtocolType::IpV6 as u16 => ProtocolType::IpV6,
+            x if x == ProtocolType::Ptp as u16 => ProtocolType::Ptp,
+            x if x == ProtocolType::Vlan as u16 => ProtocolType::Vlan,
+            _ => ProtocolType::Unimplemented,
+        }
+    }
+}
+
+impl ByteStructLen for ProtocolType {
+    const BYTE_LEN: usize = 2;
+}
+
+impl ByteStruct for ProtocolType {
+    fn read_bytes(bytes: &[u8]) -> Self {
+        let mut bytes_read = [0_u8; 2];
+        bytes_read.copy_from_slice(&bytes[0..=1]);
+        return ProtocolType::from(u16::from_be_bytes(bytes_read));
+    }
+
+    fn write_bytes(&self, bytes: &mut [u8]) {
+        let bytes_to_write = (*self as u16).to_be_bytes();
+        bytes[0] = bytes_to_write[0];
+        bytes[1] = bytes_to_write[1];
+    }
+}
+
+impl ProtocolType {
+    /// Pack into big-endian (network) byte array
     pub fn to_be_bytes(&self) -> [u8; Self::BYTE_LEN] {
         (*self as u16).to_be_bytes()
     }

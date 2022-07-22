@@ -2,7 +2,7 @@
 //!
 //! Diagram at https://en.wikipedia.org/wiki/Ethernet_frame#Ethernet_II
 
-use crate::{MacAddr, EtherType};
+use crate::MacAddr;
 
 use byte_struct::*;
 pub use ufmt::derive::uDebug;
@@ -93,6 +93,68 @@ where
         let mut bytes = [0_u8; Self::BYTE_LEN];
         self.write_bytes(&mut bytes);
         bytes
+    }
+}
+
+/// EtherType tag values (incomplete list - there are many more not implemented here)
+///
+/// See https://en.wikipedia.org/wiki/EtherType
+#[derive(Clone, Copy, uDebug, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[repr(u16)]
+pub enum EtherType {
+    /// Internet protocol version 4
+    IpV4 = 0x0800,
+    /// Address resolution protocol
+    Arp = 0x0806,
+    /// Tagged virtual LAN - if this tag is encountered, then this is not the real ethertype field, and we're reading an 802.1Q Vlan tag instead
+    /// This crate does not support tagged Vlan, which is a trust-based and inefficient system. Untagged Vlan should be used instead.
+    Vlan = 0x8100,
+    /// Internet protocol version 6
+    IpV6 = 0x86DD,
+    /// EtherCat
+    EtherCat = 0x88A4,
+    /// Precision Time Protocol
+    Ptp = 0x88A7,
+    /// Catch-all for uncommon types not handled here
+    Unimplemented = 0x0,
+}
+
+impl From<u16> for EtherType {
+    fn from(value: u16) -> Self {
+        match value {
+            x if x == EtherType::Arp as u16 => EtherType::Arp,
+            x if x == EtherType::EtherCat as u16 => EtherType::EtherCat,
+            x if x == EtherType::IpV4 as u16 => EtherType::IpV4,
+            x if x == EtherType::IpV6 as u16 => EtherType::IpV6,
+            x if x == EtherType::Ptp as u16 => EtherType::Ptp,
+            x if x == EtherType::Vlan as u16 => EtherType::Vlan,
+            _ => EtherType::Unimplemented,
+        }
+    }
+}
+
+impl ByteStructLen for EtherType {
+    const BYTE_LEN: usize = 2;
+}
+
+impl ByteStruct for EtherType {
+    fn read_bytes(bytes: &[u8]) -> Self {
+        let mut bytes_read = [0_u8; 2];
+        bytes_read.copy_from_slice(&bytes[0..=1]);
+        return EtherType::from(u16::from_be_bytes(bytes_read));
+    }
+
+    fn write_bytes(&self, bytes: &mut [u8]) {
+        let bytes_to_write = (*self as u16).to_be_bytes();
+        bytes[0] = bytes_to_write[0];
+        bytes[1] = bytes_to_write[1];
+    }
+}
+
+impl EtherType {
+    /// Pack into big-endian (network) byte array
+    pub fn to_be_bytes(&self) -> [u8; Self::BYTE_LEN] {
+        (*self as u16).to_be_bytes()
     }
 }
 
