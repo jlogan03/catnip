@@ -7,9 +7,10 @@ use modular_bitfield::prelude::*;
 use static_assertions::const_assert;
 use ufmt::derive::uDebug;
 
-/// IPV4 header per IETF-RFC-791
-///
-/// https://en.wikipedia.org/wiki/IPv4
+const_assert!(IpV4Header::BYTE_LEN == 20);
+
+/// IPV4 header per IETF-RFC-791.
+/// See https://en.wikipedia.org/wiki/IPv4.
 #[derive(ByteStruct, Clone, Copy, uDebug, Debug, PartialEq, Eq)]
 #[byte_struct_be]
 pub struct IpV4Header {
@@ -35,8 +36,6 @@ pub struct IpV4Header {
     pub dst_ipaddr: IpV4Addr,
 }
 
-const_assert!(IpV4Header::BYTE_LEN == 20);
-
 impl IpV4Header {
     /// Pack into big-endian (network) byte array
     pub fn to_be_bytes(&self) -> [u8; Self::BYTE_LEN] {
@@ -47,7 +46,6 @@ impl IpV4Header {
 }
 
 /// IPV4 frame with header and data.
-///
 /// Data should be sized in a multiple of 4 bytes.
 #[derive(Clone, Copy, uDebug, Debug, PartialEq, Eq)]
 pub struct IpV4Frame<T>

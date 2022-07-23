@@ -4,15 +4,7 @@ use crate::ip::IpV4Header;
 use byte_struct::*;
 pub use ufmt::derive::uDebug;
 
-/// UDP datagram header structure like
-///
-/// value [0] source port [u16]
-///
-/// value [1] destination port [u16]
-///
-/// value [2] total length in bytes [u16], header + data
-///
-/// value [3] checksum [u16]
+/// UDP datagram header structure for IPV4.
 #[derive(ByteStruct, Clone, Copy, uDebug, Debug, PartialEq, Eq)]
 #[byte_struct_be]
 pub struct UdpHeader {
@@ -20,9 +12,10 @@ pub struct UdpHeader {
     pub src_port: u16,
     /// Destination port
     pub dst_port: u16,
-    /// Total frame length including header and data
+    /// Total frame length including header and data, in bytes
     pub length: u16,
-    /// CRC checksum (rarely used for UDP, but must be present)
+    /// IP-style checksum (optional for UDP, and usually supplied by hardware).
+    /// Calculated from a "pseudo-header" that is not the actual header.
     pub checksum: u16,
 }
 

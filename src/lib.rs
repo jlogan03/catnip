@@ -71,10 +71,8 @@ impl uDebug for ByteArray<6> {
     }
 }
 
-/// Standard 6-byte MAC address
-///
-/// Split 24/24 format, Block ID | Device ID
-///
+/// Standard 6-byte MAC address.
+/// Split 24/24 format, Block ID | Device ID .
 /// Locally-administered addresses are [0x02, ...], [0x06, ...], [0x0A, ...], [0x0E, ...]
 pub type MacAddr = ByteArray<6>;
 

@@ -5,15 +5,14 @@
 use crate::MacAddr;
 
 use byte_struct::*;
-pub use ufmt::derive::uDebug;
+use ufmt::derive::uDebug;
+use static_assertions::const_assert;
 
-/// Header for Ethernet II frame like
-///
-/// value [0:5] src macaddr
-///
-/// value [6:11] dst macaddr  ([0xFF_u8; 6] when payload is IP packet)
-///
-/// value [12:13] ethertype
+// In general, this could be 18 bytes for a 802.1Q tagged vlan,
+// but that is not supported here because tagged vlan is spammy and unsecure.
+const_assert!(EthernetHeader::BYTE_LEN == 14);
+
+/// Header for Ethernet II frame
 #[derive(ByteStruct, Clone, Copy, uDebug, Debug, PartialEq, Eq)]
 #[byte_struct_be]
 pub struct EthernetHeader {
@@ -44,7 +43,7 @@ where
     pub header: EthernetHeader,
     /// Data payload (probably and IP frame or Arp message)
     pub data: T,
-    /// CRC checksum
+    /// CRC checksum. Must be present, but zeroed-out s.t. it can be calculated by hardware.
     pub checksum: u32,
 }
 
@@ -93,9 +92,9 @@ where
     }
 }
 
-/// EtherType tag values (incomplete list - there are many more not implemented here)
+/// EtherType tag values (incomplete list - there are many more not implemented here).
 ///
-/// See https://en.wikipedia.org/wiki/EtherType
+/// See https://en.wikipedia.org/wiki/EtherType .
 #[derive(Clone, Copy, uDebug, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u16)]
 pub enum EtherType {
