@@ -10,7 +10,7 @@ use ufmt::derive::uDebug;
 const_assert!(IpV4Header::BYTE_LEN == 20);
 
 /// IPV4 header per IETF-RFC-791.
-/// See https://en.wikipedia.org/wiki/IPv4.
+/// See <https://en.wikipedia.org/wiki/IPv4>.
 #[derive(ByteStruct, Clone, Copy, uDebug, Debug, PartialEq, Eq)]
 #[byte_struct_be]
 pub struct IpV4Header {

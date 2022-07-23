@@ -1,4 +1,4 @@
-//! Address Resolution Protocol implementation with generation of requests and responses to received requests.
+//! Address Resolution Protocol implementation for IPV4.
 //!
 //! ARP is not a distinct network abstraction layer, but is still required for most networks to function
 //! because socket abstractions frequently require an ARP request and response to be completed before sending data
@@ -7,7 +7,7 @@
 //!
 //! This is a noisy process, but on a statically-addressed network, it will ideally only occur once
 //! during network initialization or if a host resets its network drivers and needs to re-connect.
-//! In practice, most systems send out ARP requests about once per second.
+//! In practice, most systems send out ARP requests periodically, with the period varying from seconds to hours.
 //!
 //! This process is not useful on a statically-addressed network, but on a mixed statically-and-dynamically-addressed network, it can help
 //! in the case where the target device does exist on the network, but has not yet sent a packet and does not have an entry in the
@@ -17,7 +17,9 @@
 //! It can also be useful for networks with not-smart network switches where the hosts have to self-assemble the addressing space,
 //! because ARP allows each host on the network to poll the others to check if an address is already taken before assigning
 //! that address to itself. The success of that method requires that all devices on the network be configured to respond to ARP requests,
-//! which is not necessarily the case.
+//! or to listen for conflicts and resolve them proactively, which is not necessarily the case.
+//! 
+//! In any case, most network stacks that we might interact with seem to refuse to function without it.
 
 use crate::*;
 
@@ -28,11 +30,9 @@ use static_assertions::const_assert;
 const_assert!(ArpPayload::BYTE_LEN == 46);  // Make sure the ARP frame is at least sized for the minimum ethernet payload
 
 /// An ARP request or response with IPV4 addresses and standard MAC addresses.
-/// Assumes 6-byte standard MAC addresses and 4-byte IPV4 addresses; this function can't be as general as the parser
+/// Assumes 6-byte standard MAC addresses and 4-byte IPV4 addresses; this function can't be as general as the parser.
 /// because we need to know the size of the output at compile time.
-/// See https://en.wikipedia.org/wiki/Address_Resolution_Protocol .
-///
-/// Hardware type is 1 for ethernet.
+/// See <https://en.wikipedia.org/wiki/Address_Resolution_Protocol>.
 #[derive(ByteStruct, Clone, Copy, uDebug, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[byte_struct_be]
 pub struct ArpPayload {
@@ -138,9 +138,8 @@ impl ArpOperation {
     }
 }
 
-/// Protocol Type flags are the same as EtherType but must be reimplemented to avoid run-time recursion
-///
-/// See https://en.wikipedia.org/wiki/EtherType
+/// Protocol Type flags are the same as EtherType but must be reimplemented to avoid run-time recursion.
+/// See <https://en.wikipedia.org/wiki/EtherType>.
 #[derive(Clone, Copy, uDebug, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u16)]
 pub enum ProtocolType {

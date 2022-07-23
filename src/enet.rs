@@ -1,6 +1,5 @@
-//! Link layer: Ethernet II protocol
-//!
-//! Diagram at https://en.wikipedia.org/wiki/Ethernet_frame#Ethernet_II
+//! Link layer: Ethernet II protocol.
+//! See <https://en.wikipedia.org/wiki/Ethernet_frame#Ethernet_II>.
 
 use crate::MacAddr;
 
@@ -93,8 +92,7 @@ where
 }
 
 /// EtherType tag values (incomplete list - there are many more not implemented here).
-///
-/// See https://en.wikipedia.org/wiki/EtherType .
+/// See <https://en.wikipedia.org/wiki/EtherType>.
 #[derive(Clone, Copy, uDebug, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u16)]
 pub enum EtherType {
