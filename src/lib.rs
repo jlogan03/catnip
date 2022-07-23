@@ -4,12 +4,12 @@
 //! This crate currently relies on the nightly channel, and as a result, may break regularly
 //! until the required features stabilize.
 //!
-//! Makes use of const generic expressions to provide flexibility in, 
+//! Makes use of const generic expressions to provide flexibility in,
 //! and guaranteed correctness of, lengths of headers and data segments without an allocator.
 //!
-//! This library is under active development; major functionality is yet to 
+//! This library is under active development; major functionality is yet to
 //! be implemented and I'm sure some bugs are yet to be found.
-//! 
+//!
 //! ```rust
 //! use catnip::*;
 //!
@@ -68,14 +68,17 @@ use panic_never as _;
 
 pub use byte_struct::{ByteStruct, ByteStructLen};
 pub use modular_bitfield;
-pub use ufmt::{uDebug, uDisplay, uWrite, derive::uDebug};
+pub use ufmt::{derive::uDebug, uDebug, uDisplay, uWrite};
 
-pub mod arp; // Address Resolution Protocol - not a distinct layer (between link and transport), but required for IP and Udp to function on most networks
 pub mod enet; // Link Layer
 pub mod ip; // Internet layer
 pub mod udp; // Transport layer
 
+pub mod arp; // Address Resolution Protocol - not a distinct layer (between link and transport), but required for IP and UDP to function on most networks.
+pub mod dhcp; // Dynamic Host Configuration Protocol - for negotiating an IP address from a router/switch. Uses UDP.
+
 pub use arp::*;
+pub use dhcp::*;
 pub use enet::*;
 pub use ip::*;
 pub use udp::*;
