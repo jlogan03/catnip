@@ -12,6 +12,10 @@ until the required features stabilize.
 This library is under active development; major functionality is yet to 
 be implemented and I'm sure some bugs are yet to be found.
 
+Docs: https://docs.rs/catnip.
+
+# Example
+
 ```rust
 use catnip::*;
 
