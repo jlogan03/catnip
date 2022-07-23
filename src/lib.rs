@@ -190,6 +190,7 @@ impl DSCP {
 /// Calculate IP checksum per IETF-RFC-768
 /// following implementation guide in IETF-RFC-1071 section 4.1 .
 /// See https://datatracker.ietf.org/doc/html/rfc1071#section-4 .
+/// This function is provided for convenience and is not used directly.
 pub fn calc_ip_checksum(data: &[u8]) -> u16 {
     let n: usize = data.len();
     let mut sum: i32 = 0;
