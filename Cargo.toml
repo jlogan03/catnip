@@ -1,0 +1,23 @@
+[package]
+name = "catnip"
+version = "0.2.0"
+edition = "2021"
+description = "Minimal UDP/IP ethernet stack for data acquisition on private networks"
+homepage = "https://github.com/jlogan03/catnip"
+repository = "https://github.com/jlogan03/catnip"
+readme = "./README.md"
+license = "MIT OR Apache-2.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+byte_struct = "0.8.0"
+modular-bitfield = "0.11.2"
+static_assertions = "1.1.0"
+ufmt = "0.1.0"
+panic-never = { version = "0.1.0", optional = true }
+
+[features]
+default = ["no_std"]           # Just for clarity; in fact, we are always no-std and panic-never compatible
+panic_never = ["panic-never"]  # Bring in the actual panic-never panic handler
+no_std = []
