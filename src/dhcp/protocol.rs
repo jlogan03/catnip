@@ -1,17 +1,16 @@
 //! DHCP message construction and parsing
 
-use crate::{IpV4Addr, MacAddr};
+use crate::*;
 use byte_struct::*;
 
 const COOKIE: u32 = 0x63_82_53_63;
 
 use super::{DhcpError, DhcpErrorKind};
 
-/// The fixed-length part of the DHCP payload. The options section can vary in length, but only the first portion is important.
-///
-/// C-ordered, packed, and aligned to 1 byte in order to support direct conversion to byte array.
-#[derive(Clone, Copy)]
-// #[byte_struct_be]
+/// The fixed-length part of the DHCP payload. 
+/// The options section can vary in length, and is handled separately.
+#[derive(ByteStruct, Clone, Copy)]
+#[byte_struct_be]
 struct DhcpFixedPayload {
     /// Message op code / message type. 1 = BOOTREQUEST, 2 = BOOTREPLY
     op: DhcpOperation,
@@ -99,6 +98,20 @@ impl From<u8> for DhcpOperation {
             2 => return DhcpOperation::Reply,
             _ => return DhcpOperation::Unimplemented,
         }
+    }
+}
+
+impl ByteStructLen for DhcpOperation {
+    const BYTE_LEN: usize = 1;
+}
+
+impl ByteStruct for DhcpOperation {
+    fn read_bytes(bytes: &[u8]) -> Self {
+        Self::from(bytes[0])
+    }
+
+    fn write_bytes(&self, bytes: &mut [u8]) {
+        bytes[0] = *self as u8;
     }
 }
 
