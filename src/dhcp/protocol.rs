@@ -1,15 +1,17 @@
-//! DHCP message construction and parsing
+//! DHCP message construction and parsing.
+//! Partial implementation of IEC-RFC-2131,2132.
 
 use crate::*;
+// use super::{DhcpError, DhcpErrorKind};
+
 use byte_struct::*;
+use ufmt::derive::uDebug;
 
 const COOKIE: u32 = 0x63_82_53_63;
 
-use super::{DhcpError, DhcpErrorKind};
-
 /// The fixed-length part of the DHCP payload. 
 /// The options section can vary in length, and is handled separately.
-#[derive(ByteStruct, Clone, Copy)]
+#[derive(ByteStruct, uDebug, Debug, Clone, Copy, PartialEq, Eq)]
 #[byte_struct_be]
 struct DhcpFixedPayload {
     /// Message op code / message type. 1 = BOOTREQUEST, 2 = BOOTREPLY
@@ -26,20 +28,20 @@ struct DhcpFixedPayload {
     secs: u16,
     /// Broadcast flag; 1 for broadcast, 0 for unicast
     flags: u16,
-    /// Client IP Address; only used for renewal, otherwise zero
+    /// Client IP Address
     ciaddr: IpV4Addr,
-    /// Your IP Address; usually the one you are requesting to lease
+    /// Your IP Address
     yiaddr: IpV4Addr,
-    /// Server IP Address; usually the closest router or network switch
+    /// Server IP Address
     siaddr: IpV4Addr,
     /// Gateway IP Address
     giaddr: IpV4Addr,
     /// Client (your) hardware address. Actual field is 16 bytes; we only use 6 for standard MAC address.
     chaddr: MacAddr,
     /// Explicit padding of the remaining 10 bytes of chaddr
-    pad0: [u8; 10],
+    _pad0: [u16; 5],
     /// Padding of BOOTP legacy fields and server's irrelevant stringified name
-    pad1: [u8; 196],
+    _pad1: [u128; 12],
     /// "Magic cookie" identifying this as a DHCP message.
     /// Must always have the value of 0x63_82_53_63 (in dhcp::COOKIE)
     cookie: u32,
@@ -61,14 +63,14 @@ impl DhcpFixedPayload {
             hops: 0,
             xid: 0,
             secs: 0,
-            flags: 1,
+            flags: 0,
             ciaddr: ciaddr,
             yiaddr: yiaddr,
             siaddr: siaddr,
             giaddr: giaddr,
             chaddr: chaddr,
-            pad0: [0_u8; 10],
-            pad1: [0_u8; 196],
+            _pad0: [0_u16; 5],
+            _pad1: [0_u128; 12],
             cookie: COOKIE,
         }
     }
@@ -80,7 +82,7 @@ impl DhcpFixedPayload {
 ///
 /// Still has to match and change value depending on message type even though
 /// there is only one valid combination of message type and operation.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, uDebug, Debug, PartialEq, Eq)]
 #[repr(u8)]
 pub enum DhcpOperation {
     ///
@@ -115,9 +117,12 @@ impl ByteStruct for DhcpOperation {
     }
 }
 
-#[derive(Clone, Copy)]
+
+/// Contents of option field kind 53
+#[allow(missing_docs)]
+#[derive(Clone, Copy, uDebug, Debug, PartialEq, Eq)]
 #[repr(u8)]
-enum DHCPMessageKind {
+pub enum DHCPMessageKind {
     /// Client broadcast to locate available servers.
     Discover = 1,
     /// Server to client in response to DHCPDISCOVER with offer of configuration parameters.
@@ -138,9 +143,10 @@ enum DHCPMessageKind {
     Nak = 6, // Negative-acknowledge
     /// Client to server relinquishing network address and cancelling remaining lease.
     Release = 7,
-    /// Client to server, asking only for local configuration parameters;
-    /// client already has externally configured network address.
+    /// Client to server, asking only for local configuration parameters.
+    /// Client already has externally configured network address.
     Inform = 8,
+
     ForceRenew = 9,
     LeaseQuery = 10,
     LeaseUnassigned = 11,
@@ -155,9 +161,10 @@ enum DHCPMessageKind {
 
 /// Option type codes for parsing options section.
 /// Most of these are useless.
+#[allow(missing_docs)]
 #[derive(Clone, Copy)]
 #[repr(u8)]
-enum DHCPOptionKind {
+pub enum DHCPOptionKind {
     Pad = 0,
     SubnetMask = 1,
     TimeOffset = 2,
@@ -208,15 +215,18 @@ enum DHCPOptionKind {
     NetBiosScope = 47,
     XWindowFontServer = 48,
     XWindowDisplayMgr = 49,
-    // Extensions
+
+    // Extensions (these are mostly the useful ones)
     RequestedIpAddress = 50,
     IpAddressLeaseTime = 51,
     OptionOverload = 52,
+    /// This option's contents indicate how the rest of the message should be parsed
     DhcpMessageType = 53,
     ServerIdentifier = 54,
     ParameterRequestList = 55,
     Message = 56,
     MaxDhcpMessageSize = 57,
+    /// Time in seconds until start of renewal (half of lease duration)
     RenewalTime = 58,
     RebindingTime = 59,
     VendorClassId = 60,
@@ -255,4 +265,27 @@ enum DHCPOptionKind {
 }
 
 #[cfg(test)]
-mod test {}
+mod test {
+    use crate::*;
+    use super::*;
+
+
+    #[test]
+    fn test_serialization_loop() {
+        let fixed_part = DhcpFixedPayload::new(
+            DhcpOperation::Request,
+            IpV4Addr::new([1,2,3,4]),
+            IpV4Addr::new([5,6,7,8]),
+        IpV4Addr::new([10, 20, 30, 40]),
+        IpV4Addr::new([100, 200, 255, 40]),
+        MacAddr::new([11, 21, 31, 41, 51, 123])
+        );
+
+        let mut bytes = [0_u8; DhcpFixedPayload::BYTE_LEN];
+        fixed_part.write_bytes(&mut bytes);
+
+        let fixed_part_parsed = DhcpFixedPayload::read_bytes(&bytes);
+
+        assert_eq!(fixed_part_parsed, fixed_part);
+    }
+}

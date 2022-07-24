@@ -83,54 +83,6 @@ pub use enet::*;
 pub use ip::*;
 pub use udp::*;
 
-/// Newtype for [u8; N] in order to be able to implement traits.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
-#[repr(transparent)]
-pub struct ByteArray<const N: usize>(pub [u8; N]);
-
-impl<const N: usize> ByteStructLen for ByteArray<N> {
-    const BYTE_LEN: usize = N;
-}
-
-impl<const N: usize> ByteStruct for ByteArray<N> {
-    fn read_bytes(bytes: &[u8]) -> Self {
-        let mut out = [0_u8; N];
-        out.copy_from_slice(&bytes[0..N]);
-        ByteArray(out)
-    }
-
-    fn write_bytes(&self, bytes: &mut [u8]) {
-        for i in 0..N {
-            bytes[i] = self.0[i];
-        }
-    }
-}
-
-impl<const N: usize> ByteArray<N> {
-    /// Convert to big-endian byte array
-    pub fn to_be_bytes(&self) -> [u8; N] {
-        self.0
-    }
-}
-
-impl uDebug for ByteArray<4> {
-    fn fmt<W>(&self, f: &mut ufmt::Formatter<'_, W>) -> Result<(), W::Error>
-    where
-        W: uWrite + ?Sized,
-    {
-        <[u8; 4] as uDebug>::fmt(&self.0, f)
-    }
-}
-
-impl uDebug for ByteArray<6> {
-    fn fmt<W>(&self, f: &mut ufmt::Formatter<'_, W>) -> Result<(), W::Error>
-    where
-        W: uWrite + ?Sized,
-    {
-        <[u8; 6] as uDebug>::fmt(&self.0, f)
-    }
-}
-
 /// Standard 6-byte MAC address.
 /// Split 24/24 format, Block ID | Device ID .
 /// Locally-administered addresses are [0x02, ...], [0x06, ...], [0x0A, ...], [0x0E, ...]
@@ -240,6 +192,54 @@ impl ByteStruct for DSCP {
 impl DSCP {
     fn to_be_bytes(&self) -> [u8; Self::BYTE_LEN] {
         (*self as u8).to_be_bytes()
+    }
+}
+
+/// Newtype for [u8; N] in order to be able to implement traits.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[repr(transparent)]
+pub struct ByteArray<const N: usize>(pub [u8; N]);
+
+impl<const N: usize> ByteStructLen for ByteArray<N> {
+    const BYTE_LEN: usize = N;
+}
+
+impl<const N: usize> ByteStruct for ByteArray<N> {
+    fn read_bytes(bytes: &[u8]) -> Self {
+        let mut out = [0_u8; N];
+        out.copy_from_slice(&bytes[0..N]);
+        ByteArray(out)
+    }
+
+    fn write_bytes(&self, bytes: &mut [u8]) {
+        for i in 0..N {
+            bytes[i] = self.0[i];
+        }
+    }
+}
+
+impl<const N: usize> ByteArray<N> {
+    /// Convert to big-endian byte array
+    pub fn to_be_bytes(&self) -> [u8; N] {
+        self.0
+    }
+}
+
+impl uDebug for ByteArray<4> {
+    fn fmt<W>(&self, f: &mut ufmt::Formatter<'_, W>) -> Result<(), W::Error>
+    where
+        W: uWrite + ?Sized,
+    {
+        <[u8; 4] as uDebug>::fmt(&self.0, f)
+    }
+}
+
+impl uDebug for ByteArray<6> {
+    fn fmt<W>(&self, f: &mut ufmt::Formatter<'_, W>) -> Result<(), W::Error>
+    where
+        W: uWrite + ?Sized,
+    {
+        <[u8; 6] as uDebug>::fmt(&self.0, f)
     }
 }
 

@@ -4,8 +4,7 @@
 use crate::{IpV4Addr, MacAddr};
 
 /// DHCP client states with shared data.
-/// 
-/// Enum structure provides typefixed size in memory 
+/// Enum approach provides fixed-size state in memory.
 pub enum DhcpState {
     ///
     Init,
@@ -34,7 +33,7 @@ pub struct Dhcp {
     ///
     ipaddr: Option<IpV4Addr>,
     ///
-    MacAddr: MacAddr,
+    macaddr: MacAddr,
     ///
     serveraddr: Option<IpV4Addr>,
     ///
@@ -52,12 +51,12 @@ pub struct Dhcp {
 }
 
 impl Dhcp {
-    fn new_informing(ipaddr: IpV4Addr, MacAddr: MacAddr) -> Self  {
+    fn new_informing(ipaddr: IpV4Addr, macaddr: MacAddr) -> Self  {
         Dhcp { 
             state: DhcpState::Informing,
             transaction_id: 0,
             ipaddr: Some(ipaddr),
-            MacAddr: MacAddr,
+            macaddr: macaddr,
             serveraddr: None,
             router: None,
             gateway: None,
