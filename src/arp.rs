@@ -200,7 +200,7 @@ impl ProtocolType {
 }
 
 #[cfg(test)]
-mod tests {
+mod test {
     use super::*;
 
     /// Build an ARP message and make sure the parser returns the same values from the input

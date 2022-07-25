@@ -9,6 +9,7 @@ use ufmt::derive::uDebug;
 
 /// The fixed-length part of the DHCP payload.
 /// The options section can vary in length, and is handled separately.
+/// For "Inform" message kind, this is the entire message.
 #[derive(ByteStruct, uDebug, Debug, Clone, Copy, PartialEq, Eq)]
 #[byte_struct_be]
 struct DhcpFixedPayload {
