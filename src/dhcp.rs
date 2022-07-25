@@ -17,6 +17,8 @@ const DHCP_CLIENT_PORT: u16 = 68;
 
 /// "Magic Cookie" placed at the end of the fixed portion of the DHCP payload
 const DHCP_COOKIE: u32 = 0x63_82_53_63;
+/// A full word containing 255 in the options segment indicates end of message
+const DHCP_END: u32 = 0xff; 
 
 use byte_struct::*;
 use ufmt::derive::uDebug;
@@ -60,10 +62,13 @@ struct DhcpFixedPayload {
     cookie: u32,
     /// The message kind should always be included and should be the first options field
     kind_option: DhcpMessageKindOption,
+    /// Either end the message or add a gratuitous word of padding
+    end_or_pad: u32
 }
 
 impl DhcpFixedPayload {
     pub fn new(
+        end_of_message: bool,
         op: DhcpOperation,
         kind: DhcpMessageKind,
         transaction_id: u32,
@@ -89,11 +94,8 @@ impl DhcpFixedPayload {
             _pad0: [0_u16; 5],
             _pad1: [0_u128; 12],
             cookie: DHCP_COOKIE,
-            kind_option: DhcpMessageKindOption {
-                kind: DhcpOptionKind::DhcpMessageType,
-                length: 1,
-                value: kind,
-            },
+            kind_option: DhcpMessageKindOption::new(kind),
+            end_or_pad: DHCP_END * (end_of_message as u32)
         }
     }
 
@@ -104,6 +106,7 @@ impl DhcpFixedPayload {
     /// the network that may or may not receive a forwarded copy of the DHCP INFORM.
     pub fn new_inform(ipaddr: IpV4Addr, macaddr: MacAddr, transaction_id: u32) -> Self {
         Self::new(
+            true,
             DhcpOperation::Request,
             DhcpMessageKind::Inform,
             transaction_id,
@@ -125,9 +128,23 @@ pub struct DhcpMessageKindOption {
     /// Type of option field
     pub kind: DhcpOptionKind,
     /// Length (how many bytes of data is the actual option?)
-    pub length: u8,
+    length: u8,
     /// The actual message kind
-    pub value: DhcpMessageKind,
+    value: DhcpMessageKind,
+    /// Pad to word boundary or indicate end of message
+    _pad: u8
+}
+
+impl DhcpMessageKindOption {
+    /// For convenience, since most values are predetermined
+    pub fn new(kind: DhcpMessageKind) -> Self {
+        DhcpMessageKindOption {
+            kind: DhcpOptionKind::DhcpMessageType,
+            length: 1,
+            value: kind,
+            _pad: 0
+        }
+    }
 }
 
 enum_with_unknown! {
@@ -338,6 +355,7 @@ mod test {
     #[test]
     fn test_serialization_loop() {
         let fixed_part = DhcpFixedPayload::new(
+            true,
             DhcpOperation::Request,
             DhcpMessageKind::Inform,
             12345,
