@@ -266,6 +266,7 @@ macro_rules! enum_with_unknown {
               $( #[$variant_attr] )*
               $variant
             ),*,
+            /// Catch-all for values that do not match a variant
             Unknown($ty)
         }
 

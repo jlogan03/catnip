@@ -43,11 +43,14 @@ struct DhcpFixedPayload {
     /// "Magic cookie" identifying this as a DHCP message.
     /// Must always have the value of 0x63_82_53_63 (in dhcp::COOKIE)
     cookie: u32,
+    /// The message kind should always be included and should be the first options field
+    kind_option: DhcpMessageKindOption,
 }
 
 impl DhcpFixedPayload {
     pub fn new(
         op: DhcpOperation,
+        kind: DhcpMessageKind,
         ciaddr: IpV4Addr,
         yiaddr: IpV4Addr,
         siaddr: IpV4Addr,
@@ -70,7 +73,11 @@ impl DhcpFixedPayload {
             _pad0: [0_u16; 5],
             _pad1: [0_u128; 12],
             cookie: DHCP_COOKIE,
-            // kind_option: DhcpMessageKindOption,
+            kind_option: DhcpMessageKindOption {
+                kind: DhcpOptionKind::DhcpMessageType,
+                length: 1,
+                value: kind,
+            },
         }
     }
 }
@@ -78,39 +85,27 @@ impl DhcpFixedPayload {
 /// The options field for message kind is technically part of the
 /// variable-length portion, but is always required and always the first option
 /// so it's really part of the fixed-length portion.
-// #[derive(ByteStruct, uDebug, Debug, Clone, Copy, PartialEq, Eq)]
-// #[byte_struct_be]
+#[derive(ByteStruct, uDebug, Debug, Clone, Copy, PartialEq, Eq)]
+#[byte_struct_be]
 pub struct DhcpMessageKindOption {
     /// Type of option field
-    kind: DhcpOptionKind,
+    pub kind: DhcpOptionKind,
     /// Length (how many bytes of data is the actual option?)
-    length: u8,
+    pub length: u8,
     /// The actual message kind
-    value: DhcpMessageKind,
+    pub value: DhcpMessageKind,
 }
 
-/// Message op code / message type. 1 = BOOTREQUEST, 2 = BOOTREPLY
-/// Legacy operation type field from BOOTP.
-/// Still has to match and change value depending on message type even though
-/// there is only one valid combination of message type and operation.
-#[derive(Clone, Copy, uDebug, Debug, PartialEq, Eq)]
-#[repr(u8)]
-pub enum DhcpOperation {
-    ///
-    Request = 1,
-    ///
-    Reply = 2,
-    ///
-    Unimplemented,
-}
-
-impl From<u8> for DhcpOperation {
-    fn from(value: u8) -> Self {
-        match value {
-            1 => return DhcpOperation::Request,
-            2 => return DhcpOperation::Reply,
-            _ => return DhcpOperation::Unimplemented,
-        }
+enum_with_unknown! {
+    /// Message op code / message type. 1 = BOOTREQUEST, 2 = BOOTREPLY
+    /// Legacy operation type field from BOOTP.
+    /// Still has to match and change value depending on message type even though
+    /// there is only one valid combination of message type and operation.
+    pub enum DhcpOperation(u8) {
+        /// Anything coming from the client
+        Request = 1,
+        /// Anything coming from the server
+        Reply = 2
     }
 }
 
@@ -124,7 +119,7 @@ impl ByteStruct for DhcpOperation {
     }
 
     fn write_bytes(&self, bytes: &mut [u8]) {
-        bytes[0] = *self as u8;
+        bytes[0] = u8::from(*self);
     }
 }
 
@@ -310,6 +305,7 @@ mod test {
     fn test_serialization_loop() {
         let fixed_part = DhcpFixedPayload::new(
             DhcpOperation::Request,
+            DhcpMessageKind::Inform,
             IpV4Addr::new([1, 2, 3, 4]),
             IpV4Addr::new([5, 6, 7, 8]),
             IpV4Addr::new([10, 20, 30, 40]),
