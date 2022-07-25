@@ -10,8 +10,11 @@
 //! In this case, the server refers to the router or similar hardware orchestrating the address space,
 //! while the client refers to the endpoints requesting addresses.
 
-const SERVER_PORT: u16 = 67;
-const CLIENT_PORT: u16 = 68;
+const DHCP_SERVER_PORT: u16 = 67;
+const DHCP_CLIENT_PORT: u16 = 68;
+
+/// "Magic Cookie" placed at the end of the fixed portion of the DHCP payload
+const DHCP_COOKIE: u32 = 0x63_82_53_63;
 
 enum DhcpErrorKind {
     InvalidOperationType,
