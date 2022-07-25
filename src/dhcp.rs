@@ -1,8 +1,22 @@
-//! DHCP message construction and parsing.
-//! Partial implementation of IETF-RFC-2131,2132.
+//! Dynamic Host Configuration Protocol for IPV4.
+//!
+//! Client side of the call-response structure used by a router to assign IP addresses to devices on a local network.
+//!
+//! Partial implementation per IETF-RFC-2131; see https://datatracker.ietf.org/doc/html/rfc2131#page-22
+//!
+//! This is intended to provide just enough functionality to accept a statically-assigned address on
+//! networks that require confirmation of static addresses with an indefinite lease duration via DHCP.
+//! 
+//! In this case, the server refers to the router or similar hardware orchestrating the address space,
+//! while the client refers to the endpoints requesting addresses.
 
-use super::*;
 use crate::*;
+
+const DHCP_SERVER_PORT: u16 = 67;
+const DHCP_CLIENT_PORT: u16 = 68;
+
+/// "Magic Cookie" placed at the end of the fixed portion of the DHCP payload
+const DHCP_COOKIE: u32 = 0x63_82_53_63;
 
 use byte_struct::*;
 use ufmt::derive::uDebug;
@@ -52,24 +66,25 @@ impl DhcpFixedPayload {
     pub fn new(
         op: DhcpOperation,
         kind: DhcpMessageKind,
+        transaction_id: u32,
+        broadcast: bool,
         ciaddr: IpV4Addr,
         yiaddr: IpV4Addr,
         siaddr: IpV4Addr,
-        giaddr: IpV4Addr,
         chaddr: MacAddr,
-    ) -> DhcpFixedPayload {
+    ) -> Self {
         DhcpFixedPayload {
             op: op,
             htype: 1_u8, // Always 1 for ethernet
             hlen: 6_u8,  // Always 6 byte standard mac address
             hops: 0,
-            xid: 0,
+            xid: transaction_id,
             secs: 0,
-            flags: 0,
+            flags: broadcast as u16,
             ciaddr: ciaddr,
             yiaddr: yiaddr,
             siaddr: siaddr,
-            giaddr: giaddr,
+            giaddr: IpV4Addr::ANY,
             chaddr: chaddr,
             _pad0: [0_u16; 5],
             _pad1: [0_u128; 12],
@@ -80,6 +95,24 @@ impl DhcpFixedPayload {
                 value: kind,
             },
         }
+    }
+
+    /// Build a DHCP INFORM message to broadcast to the network indicating that we are
+    /// taking a pre-assigned IP address which may have already be assigned statically
+    /// in the configuration of the router. This message should also be accompanied by
+    /// an ARP "announce" message to broadcast the presence of the machine to others on
+    /// the network that may or may not receive a forwarded copy of the DHCP INFORM.
+    pub fn new_inform(ipaddr: IpV4Addr, macaddr: MacAddr, transaction_id: u32) -> Self {
+        Self::new(
+            DhcpOperation::Request,
+            DhcpMessageKind::Inform,
+            transaction_id,
+            true,
+            ipaddr,
+            IpV4Addr::ANY,
+            IpV4Addr::ANY,
+            macaddr
+        )
     }
 }
 
@@ -307,8 +340,9 @@ mod test {
         let fixed_part = DhcpFixedPayload::new(
             DhcpOperation::Request,
             DhcpMessageKind::Inform,
+            12345,
+            true,
             IpV4Addr::new([1, 2, 3, 4]),
-            IpV4Addr::new([5, 6, 7, 8]),
             IpV4Addr::new([10, 20, 30, 40]),
             IpV4Addr::new([100, 200, 255, 40]),
             MacAddr::new([11, 21, 31, 41, 51, 123]),
