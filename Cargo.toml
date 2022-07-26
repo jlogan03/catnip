@@ -21,3 +21,11 @@ panic-never = { version = "0.1.0", optional = true }
 default = ["no_std"]           # Just for clarity; in fact, we are always no-std and panic-never compatible
 panic_never = ["panic-never"]  # Bring in the actual panic-never panic handler
 no_std = []
+
+[[example]]
+name = "udp"
+test = true
+
+[[example]]
+name = "arp"
+test = true
