@@ -9,6 +9,23 @@
 //! 
 //! In this case, the server refers to the router or similar hardware orchestrating the address space,
 //! while the client refers to the endpoints requesting addresses.
+//! 
+//! ```rust
+//! use catnip::*;
+//! 
+//! let dhcp_inform = DhcpFixedPayload::new_inform(
+//!     IpV4Addr::new([1, 2, 3, 4]),
+//!     MacAddr::new([5, 6, 7, 8, 9, 10]),
+//!     12345 // Arbitrary transaction ID chosen pseudorandomly by client (us)
+//! );
+//!
+//! // Serialize
+//! let mut bytes = dhcp_inform.to_be_bytes();
+//! // Deserialize
+//! let msg_parsed = DhcpFixedPayload::read_bytes(&bytes);
+//!
+//! assert_eq!(msg_parsed, dhcp_inform);
+//! ```
 
 use crate::*;
 
@@ -28,7 +45,7 @@ use ufmt::derive::uDebug;
 /// For "Inform" message kind, this is the entire message.
 #[derive(ByteStruct, uDebug, Debug, Clone, Copy, PartialEq, Eq)]
 #[byte_struct_be]
-struct DhcpFixedPayload {
+pub struct DhcpFixedPayload {
     /// Message op code / message type. 1 = BOOTREQUEST, 2 = BOOTREPLY
     op: DhcpOperation,
     /// Hardware type always 1 for ethernet
@@ -67,6 +84,8 @@ struct DhcpFixedPayload {
 }
 
 impl DhcpFixedPayload {
+
+    /// Convenience function to remove boilerplate for predetermined fields.
     pub fn new(
         end_of_message: bool,
         op: DhcpOperation,
@@ -116,6 +135,14 @@ impl DhcpFixedPayload {
             IpV4Addr::ANY,
             macaddr
         )
+    }
+
+    /// Pack into big-endian (network) byte array
+    pub fn to_be_bytes(&self) -> [u8; Self::BYTE_LEN] {
+        let mut header_bytes = [0_u8; Self::BYTE_LEN];
+        self.write_bytes(&mut header_bytes);
+
+        header_bytes
     }
 }
 
@@ -354,23 +381,17 @@ mod test {
 
     #[test]
     fn test_serialization_loop() {
-        let fixed_part = DhcpFixedPayload::new(
-            true,
-            DhcpOperation::Request,
-            DhcpMessageKind::Inform,
-            12345,
-            true,
+        let dhcp_inform = DhcpFixedPayload::new_inform(
             IpV4Addr::new([1, 2, 3, 4]),
-            IpV4Addr::new([10, 20, 30, 40]),
-            IpV4Addr::new([100, 200, 255, 40]),
-            MacAddr::new([11, 21, 31, 41, 51, 123]),
+            MacAddr::new([5, 6, 7, 8, 9, 10]),
+            12345
         );
 
         let mut bytes = [0_u8; DhcpFixedPayload::BYTE_LEN];
-        fixed_part.write_bytes(&mut bytes);
+        dhcp_inform.write_bytes(&mut bytes);
 
-        let fixed_part_parsed = DhcpFixedPayload::read_bytes(&bytes);
+        let msg_parsed = DhcpFixedPayload::read_bytes(&bytes);
 
-        assert_eq!(fixed_part_parsed, fixed_part);
+        assert_eq!(msg_parsed, dhcp_inform);
     }
 }

@@ -29,3 +29,7 @@ test = true
 [[example]]
 name = "arp"
 test = true
+
+[[example]]
+name = "dhcp"
+test = true
