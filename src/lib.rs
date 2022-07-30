@@ -4,12 +4,12 @@
 //! This crate currently relies on the nightly channel, and as a result, may break regularly
 //! until the required features stabilize.
 //!
-//! Makes use of const generic expressions to provide flexibility in, 
+//! Makes use of const generic expressions to provide flexibility in,
 //! and guaranteed correctness of, lengths of headers and data segments without an allocator.
 //!
-//! This library is under active development; major functionality is yet to 
+//! This library is under active development; major functionality is yet to
 //! be implemented and I'm sure some bugs are yet to be found.
-//! 
+//!
 //! ```rust
 //! use catnip::*;
 //!
@@ -68,65 +68,20 @@ use panic_never as _;
 
 pub use byte_struct::{ByteStruct, ByteStructLen};
 pub use modular_bitfield;
-pub use ufmt::{uDebug, uDisplay, uWrite, derive::uDebug};
+pub use ufmt::{derive::uDebug, uDebug, uDisplay, uWrite};
 
-pub mod arp; // Address Resolution Protocol - not a distinct layer (between link and transport), but required for IP and Udp to function on most networks
 pub mod enet; // Link Layer
 pub mod ip; // Internet layer
 pub mod udp; // Transport layer
 
+pub mod arp; // Address Resolution Protocol - not a distinct layer (between link and transport), but required for IP and UDP to function on most networks.
+pub mod dhcp; // Dynamic Host Configuration Protocol - for negotiating an IP address from a router/switch. Uses UDP.
+
 pub use arp::*;
+pub use dhcp::*;
 pub use enet::*;
 pub use ip::*;
 pub use udp::*;
-
-/// Newtype for [u8; N] in order to be able to implement traits.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
-#[repr(transparent)]
-pub struct ByteArray<const N: usize>(pub [u8; N]);
-
-impl<const N: usize> ByteStructLen for ByteArray<N> {
-    const BYTE_LEN: usize = N;
-}
-
-impl<const N: usize> ByteStruct for ByteArray<N> {
-    fn read_bytes(bytes: &[u8]) -> Self {
-        let mut out = [0_u8; N];
-        out.copy_from_slice(&bytes[0..N]);
-        ByteArray(out)
-    }
-
-    fn write_bytes(&self, bytes: &mut [u8]) {
-        for i in 0..N {
-            bytes[i] = self.0[i];
-        }
-    }
-}
-
-impl<const N: usize> ByteArray<N> {
-    /// Convert to big-endian byte array
-    pub fn to_be_bytes(&self) -> [u8; N] {
-        self.0
-    }
-}
-
-impl uDebug for ByteArray<4> {
-    fn fmt<W>(&self, f: &mut ufmt::Formatter<'_, W>) -> Result<(), W::Error>
-    where
-        W: uWrite + ?Sized,
-    {
-        <[u8; 4] as uDebug>::fmt(&self.0, f)
-    }
-}
-
-impl uDebug for ByteArray<6> {
-    fn fmt<W>(&self, f: &mut ufmt::Formatter<'_, W>) -> Result<(), W::Error>
-    where
-        W: uWrite + ?Sized,
-    {
-        <[u8; 6] as uDebug>::fmt(&self.0, f)
-    }
-}
 
 /// Standard 6-byte MAC address.
 /// Split 24/24 format, Block ID | Device ID .
@@ -237,6 +192,101 @@ impl ByteStruct for DSCP {
 impl DSCP {
     fn to_be_bytes(&self) -> [u8; Self::BYTE_LEN] {
         (*self as u8).to_be_bytes()
+    }
+}
+
+/// Newtype for [u8; N] in order to be able to implement traits.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[repr(transparent)]
+pub struct ByteArray<const N: usize>(pub [u8; N]);
+
+impl<const N: usize> ByteStructLen for ByteArray<N> {
+    const BYTE_LEN: usize = N;
+}
+
+impl<const N: usize> ByteStruct for ByteArray<N> {
+    fn read_bytes(bytes: &[u8]) -> Self {
+        let mut out = [0_u8; N];
+        out.copy_from_slice(&bytes[0..N]);
+        ByteArray(out)
+    }
+
+    fn write_bytes(&self, bytes: &mut [u8]) {
+        for i in 0..N {
+            bytes[i] = self.0[i];
+        }
+    }
+}
+
+impl<const N: usize> ByteArray<N> {
+    /// Convert to big-endian byte array
+    pub fn to_be_bytes(&self) -> [u8; N] {
+        self.0
+    }
+}
+
+impl uDebug for ByteArray<4> {
+    fn fmt<W>(&self, f: &mut ufmt::Formatter<'_, W>) -> Result<(), W::Error>
+    where
+        W: uWrite + ?Sized,
+    {
+        <[u8; 4] as uDebug>::fmt(&self.0, f)
+    }
+}
+
+impl uDebug for ByteArray<6> {
+    fn fmt<W>(&self, f: &mut ufmt::Formatter<'_, W>) -> Result<(), W::Error>
+    where
+        W: uWrite + ?Sized,
+    {
+        <[u8; 6] as uDebug>::fmt(&self.0, f)
+    }
+}
+
+/// Derive To/From with an added "Unknown" variant catch-all for converting
+/// from numerical values that do not match a valid variant in order to 
+/// avoid either panicking or cumbersome error handling.
+/// 
+/// Copied shamelessly (with some modification) from smoltcp.
+#[macro_export]
+macro_rules! enum_with_unknown {
+    (
+        $( #[$enum_attr:meta] )*
+        pub enum $name:ident($ty:ty) {
+            $(
+              $( #[$variant_attr:meta] )*
+              $variant:ident = $value:expr
+            ),+ $(,)?
+        }
+    ) => {
+        #[derive(Debug, uDebug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
+        $( #[$enum_attr] )*
+        pub enum $name {
+            $(
+              $( #[$variant_attr] )*
+              $variant
+            ),*,
+            /// Catch-all for values that do not match a variant
+            Unknown($ty)
+        }
+
+        impl ::core::convert::From<$ty> for $name {
+            fn from(value: $ty) -> Self {
+                match value {
+                    $( $value => $name::$variant ),*,
+                    other => $name::Unknown(other)
+                }
+            }
+        }
+
+        impl ::core::convert::From<$name> for $ty {
+            fn from(value: $name) -> Self {
+                match value {
+                    $( $name::$variant => $value ),*,
+                    $name::Unknown(other) => other
+                }
+            }
+        }
     }
 }
 
