@@ -38,7 +38,7 @@ pub struct IpV4Header {
 
 impl IpV4Header {
     /// Pack into big-endian (network) byte array
-    fn to_be_bytes(&self) -> [u8; Self::BYTE_LEN] {
+    pub fn to_be_bytes(&self) -> [u8; Self::BYTE_LEN] {
         let mut bytes = [0_u8; Self::BYTE_LEN];
         self.write_bytes(&mut bytes);
         bytes
