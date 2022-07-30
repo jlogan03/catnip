@@ -12,3 +12,5 @@ cargo +nightly rustdoc -- -Zunstable-options --output-format json
 cp ./target/doc/catnip.json ./tmp
 
 cargo semver-checks diff-files --current ./tmp/catnip.json --baseline ./tmp/catnip-main.json
+
+rm -rf ./tmp
