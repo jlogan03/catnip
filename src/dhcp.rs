@@ -6,13 +6,13 @@
 //!
 //! This is intended to provide just enough functionality to accept a statically-assigned address on
 //! networks that require confirmation of static addresses with an indefinite lease duration via DHCP.
-//! 
+//!
 //! In this case, the server refers to the router or similar hardware orchestrating the address space,
 //! while the client refers to the endpoints requesting addresses.
-//! 
+//!
 //! ```rust
 //! use catnip::*;
-//! 
+//!
 //! let dhcp_inform = DhcpFixedPayload::new_inform(
 //!     IpV4Addr::new([1, 2, 3, 4]),
 //!     MacAddr::new([5, 6, 7, 8, 9, 10]),
@@ -29,13 +29,16 @@
 
 use crate::*;
 
-const DHCP_SERVER_PORT: u16 = 67;
-const DHCP_CLIENT_PORT: u16 = 68;
+/// UDP port on server
+pub const DHCP_SERVER_PORT: u16 = 67;
+
+/// UDP port on client
+pub const DHCP_CLIENT_PORT: u16 = 68;
 
 /// "Magic Cookie" placed at the end of the fixed portion of the DHCP payload
 const DHCP_COOKIE: u32 = 0x63_82_53_63;
 /// A full word containing 255 in the options segment indicates end of message
-const DHCP_END: u32 = 0xff; 
+const DHCP_END: u32 = 0xff;
 
 use byte_struct::*;
 use ufmt::derive::uDebug;
@@ -79,12 +82,9 @@ pub struct DhcpFixedPayload {
     cookie: u32,
     /// The message kind should always be included and should be the first options field
     kind_option: DhcpMessageKindOption,
-    /// Either end the message or add a gratuitous word of padding
-    end_or_pad: u32
 }
 
 impl DhcpFixedPayload {
-
     /// Convenience function to remove boilerplate for predetermined fields.
     pub fn new(
         end_of_message: bool,
@@ -104,7 +104,7 @@ impl DhcpFixedPayload {
             hops: 0,
             xid: transaction_id,
             secs: 0,
-            flags: broadcast as u16,
+            flags: (broadcast as u16) * 32768,
             ciaddr: ciaddr,
             yiaddr: yiaddr,
             siaddr: siaddr,
@@ -113,8 +113,7 @@ impl DhcpFixedPayload {
             _pad0: [0_u16; 5],
             _pad1: [0_u128; 12],
             cookie: DHCP_COOKIE,
-            kind_option: DhcpMessageKindOption::new(kind),
-            end_or_pad: DHCP_END * (end_of_message as u32)
+            kind_option: DhcpMessageKindOption::new(kind, end_of_message),
         }
     }
 
@@ -133,7 +132,7 @@ impl DhcpFixedPayload {
             ipaddr,
             IpV4Addr::ANY,
             IpV4Addr::ANY,
-            macaddr
+            macaddr,
         )
     }
 
@@ -159,17 +158,20 @@ pub struct DhcpMessageKindOption {
     /// The actual message kind
     value: DhcpMessageKind,
     /// Pad to word boundary or indicate end of message
-    _pad: u8
+    _pad: u8,
 }
 
 impl DhcpMessageKindOption {
     /// For convenience, since most values are predetermined
-    pub fn new(kind: DhcpMessageKind) -> Self {
+    pub fn new(kind: DhcpMessageKind, eom: bool) -> Self {
         DhcpMessageKindOption {
             kind: DhcpOptionKind::DhcpMessageType,
             length: 1,
             value: kind,
-            _pad: 0
+            _pad: match eom {
+                true => 255,
+                false => 0,
+            },
         }
     }
 }
@@ -384,7 +386,7 @@ mod test {
         let dhcp_inform = DhcpFixedPayload::new_inform(
             IpV4Addr::new([1, 2, 3, 4]),
             MacAddr::new([5, 6, 7, 8, 9, 10]),
-            12345
+            12345,
         );
 
         let mut bytes = [0_u8; DhcpFixedPayload::BYTE_LEN];

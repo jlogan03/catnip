@@ -129,10 +129,10 @@ impl ByteStruct for Fragmentation {
 #[bitfield(bits = 8)]
 #[derive(Clone, Copy, uDebug, Debug, Default, PartialEq, Eq)]
 pub struct VersionAndHeaderLength {
-    /// IP version number
-    pub version: B4,
     /// Length of IP header in 32-bit words (usually 5 words, or 20 bytes)
     pub header_length: B4,
+    /// IP version number
+    pub version: B4,
 }
 
 impl ByteStructLen for VersionAndHeaderLength {
