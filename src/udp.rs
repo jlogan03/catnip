@@ -27,10 +27,10 @@ impl UdpHeader {
 
     /// Pack into big-endian (network) byte array
     pub fn to_be_bytes(&self) -> [u8; Self::BYTE_LEN] {
-        let mut header_bytes = [0_u8; Self::BYTE_LEN];
-        self.write_bytes(&mut header_bytes);
+        let mut bytes = [0_u8; Self::BYTE_LEN];
+        self.write_bytes(&mut bytes);
 
-        header_bytes
+        bytes
     }
 }
 
@@ -44,6 +44,16 @@ where
     pub header: UdpHeader,
     /// Data to transmit; bytes must be in some multiple of 4 (32 bit words)
     pub data: T,
+}
+
+impl<T> UdpFrame<T> where T: ByteStruct {
+    /// Pack into big-endian (network) byte array
+    pub fn to_be_bytes(&self) -> [u8; Self::BYTE_LEN] {
+        let mut bytes = [0_u8; Self::BYTE_LEN];
+        self.write_bytes(&mut bytes);
+
+        bytes
+    }
 }
 
 impl<T> ByteStructLen for UdpFrame<T>

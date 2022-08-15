@@ -86,7 +86,8 @@ impl<T> IpV4Frame<T>
 where
     T: ByteStruct,
 {
-    fn to_be_bytes(&self) -> [u8; Self::BYTE_LEN] {
+    /// Pack into big-endian (network) byte array
+    pub fn to_be_bytes(&self) -> [u8; Self::BYTE_LEN] {
         let mut bytes = [0_u8; Self::BYTE_LEN];
         self.write_bytes(&mut bytes);
         bytes

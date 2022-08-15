@@ -32,7 +32,7 @@ fn test_arp() -> () {
     let _msg_parsed = ArpPayload::read_bytes(&bytes);
 }
 
-fn test_enet_ip_udp() -> () {
+fn generate_sample_frame() -> EthernetFrame::<IpV4Frame<UdpFrame<ByteArray<8>>>> {
     // Some made-up addresses
     // MAC address in locally-administered address range
     // IP addresses in local network range
@@ -78,6 +78,12 @@ fn test_enet_ip_udp() -> () {
         },
         checksum: 0_u32,
     };
+
+    frame
+}
+
+fn test_enet_ip_udp() -> () {
+    let frame = generate_sample_frame();
 
     let bytes = frame.to_be_bytes();
     let _frame_parsed = EthernetFrame::<IpV4Frame<UdpFrame<ByteArray<8>>>>::read_bytes(&bytes);

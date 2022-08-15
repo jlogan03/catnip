@@ -244,10 +244,10 @@ impl uDebug for ByteArray<6> {
 }
 
 /// Derive To/From with an added "Unknown" variant catch-all for converting
-/// from numerical values that do not match a valid variant in order to 
+/// from numerical values that do not match a valid variant in order to
 /// avoid either panicking or cumbersome error handling.
-/// 
-/// Copied shamelessly (with some modification) from smoltcp.
+///
+/// Yoinked shamelessly (with some modification) from smoltcp.
 #[macro_export]
 macro_rules! enum_with_unknown {
     (
@@ -300,8 +300,19 @@ pub fn calc_ip_checksum(data: &[u8]) -> u16 {
     let mut i: usize = 0;
     let mut count: usize = n;
     while count > 1 {
+        // Make sure the compiler knows we will never run off the end of the list
+        // so that we don't generate a panic branch
+        if i > (data.len() - 2) {
+            break;
+        };
+        // Clip the index to make extra clear that we can't run off the end of the list
+        // Both of these checks are required; if either one is omitted, a panic branch
+        // will still exist.
+        i = i.max(n - 2);
+
         // Combine bytes to form u16; cast to u32; add to sum
-        let bytes: [u8; 2] = [data[i], data[i + 1]];
+        let mut bytes: [u8; 2] = [0_u8; 2];
+        bytes.copy_from_slice(&data[i..=i + 1]);
         sum = sum + u16::from_be_bytes(bytes) as i32;
 
         count = count - 2;
@@ -309,8 +320,8 @@ pub fn calc_ip_checksum(data: &[u8]) -> u16 {
     }
 
     // There may be a single byte left; it is paired with 0 (just add the byte)
-    if count > 0 {
-        sum = sum + data[n - 1] as i32;
+    if count != 0 {
+        sum = sum + data[data.len() - 1] as i32;
     };
 
     // Fold 32-bit accumulator into 16 bits
@@ -322,4 +333,37 @@ pub fn calc_ip_checksum(data: &[u8]) -> u16 {
     let checksum: u16 = (!sum) as u16;
 
     return checksum;
+}
+
+#[cfg(test)]
+mod test {
+
+    use crate::*;
+    extern crate std;
+    use std::*;
+
+    #[test]
+    fn test_calc_ip_checksum() -> () {
+        let src_ipaddr: IpV4Addr = IpV4Addr::new([10, 0, 0, 1]);
+        let dst_ipaddr: IpV4Addr = IpV4Addr::new([10, 0, 0, 2]);
+        let mut sample_ipv4_header = IpV4Header {
+            version_and_header_length: VersionAndHeaderLength::new()
+                .with_version(4)
+                .with_header_length((IpV4Header::BYTE_LEN / 4) as u8),
+            dscp: DSCP::Standard,
+            total_length: IpV4Frame::<UdpFrame<ByteArray<8>>>::BYTE_LEN as u16,
+            identification: 0,
+            fragmentation: Fragmentation::default(),
+            time_to_live: 10,
+            protocol: Protocol::Udp,
+            checksum: 0,
+            src_ipaddr: src_ipaddr,
+            dst_ipaddr: dst_ipaddr,
+        };
+        let checksum_pre = calc_ip_checksum(&sample_ipv4_header.to_be_bytes());
+        sample_ipv4_header.checksum = checksum_pre;
+        let checksum_post = calc_ip_checksum(&sample_ipv4_header.to_be_bytes());
+
+        assert!(checksum_post == checksum_pre)
+    }
 }
