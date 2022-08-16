@@ -295,6 +295,34 @@ macro_rules! enum_with_unknown {
 /// See <https://datatracker.ietf.org/doc/html/rfc1071#section-4> .
 /// This function is provided for convenience and is not used directly.
 pub fn calc_ip_checksum(data: &[u8]) -> u16 {
+    // Partial calc
+    let sum = calc_ip_checksum_incomplete(data);
+    // Fold and flip
+    let checksum = calc_ip_checksum_finalize(sum);
+
+    checksum
+}
+
+/// Finalize an IP checksum by folding the accumulator from an [i32]
+/// to a [u16] and taking the one's complement
+pub fn calc_ip_checksum_finalize(sum: i32) -> u16 {
+    // Copy to avoid mutating the input, which may be used for something else
+    // since some checksums relate to overlapping data
+    let mut sum = sum;
+
+    // Fold 32-bit accumulator into 16 bits
+    while sum >> 16 > 0 {
+        sum = (sum & 0xffff) + (sum >> 16);
+    }
+
+    // Take one's complement
+    let checksum: u16 = (!sum) as u16;
+    checksum
+}
+
+/// Calculate an IP checksum on incomplete data
+/// returning the unfolded accumulator as [i32]
+pub fn calc_ip_checksum_incomplete(data: &[u8]) -> i32 {
     let n: usize = data.len();
     let mut sum: i32 = 0;
     let mut i: usize = 0;
@@ -324,15 +352,7 @@ pub fn calc_ip_checksum(data: &[u8]) -> u16 {
         sum = sum + data[data.len() - 1] as i32;
     };
 
-    // Fold 32-bit accumulator into 16 bits
-    while sum >> 16 > 0 {
-        sum = (sum & 0xffff) + (sum >> 16);
-    }
-
-    // Take one's complement
-    let checksum: u16 = (!sum) as u16;
-
-    return checksum;
+    sum
 }
 
 #[cfg(test)]
