@@ -305,52 +305,41 @@ pub fn calc_ip_checksum(data: &[u8]) -> u16 {
 
 /// Finalize an IP checksum by folding the accumulator from an [i32]
 /// to a [u16] and taking the one's complement
-pub fn calc_ip_checksum_finalize(sum: i32) -> u16 {
+pub fn calc_ip_checksum_finalize(sum: u32) -> u16 {
     // Copy to avoid mutating the input, which may be used for something else
     // since some checksums relate to overlapping data
     let mut sum = sum;
 
     // Fold 32-bit accumulator into 16 bits
-    while sum >> 16 > 0 {
+    while sum >> 16 != 0 {
         sum = (sum & 0xffff) + (sum >> 16);
     }
 
-    // Take one's complement
-    let checksum: u16 = (!sum) as u16;
+    // Convert to u16 and take bitwise complement
+    let checksum = !(sum as u16);
+
     checksum
 }
 
 /// Calculate an IP checksum on incomplete data
 /// returning the unfolded accumulator as [i32]
-pub fn calc_ip_checksum_incomplete(data: &[u8]) -> i32 {
-    let n: usize = data.len();
-    let mut sum: i32 = 0;
+/// 
+/// This is a slowish method by about a factor of 2-4.
+/// It would be faster to case pairs of bytes to u16,
+/// but this method avoids generating panic branches in slice operations.
+pub fn calc_ip_checksum_incomplete(data: &[u8]) -> u32 {
+    let mut sum: u32 = 0;
     let mut i: usize = 0;
-    let mut count: usize = n;
-    while count > 1 {
-        // Make sure the compiler knows we will never run off the end of the list
-        // so that we don't generate a panic branch
-        if i > (data.len() - 2) {
-            break;
+
+    for x in data {
+        if i % 2 == 0 {
+            sum += (*x as u32) << 8;
+        } else {
+            sum += *x as u32;
         };
-        // Clip the index to make extra clear that we can't run off the end of the list
-        // Both of these checks are required; if either one is omitted, a panic branch
-        // will still exist.
-        i = i.max(n - 2);
 
-        // Combine bytes to form u16; cast to u32; add to sum
-        let mut bytes: [u8; 2] = [0_u8; 2];
-        bytes.copy_from_slice(&data[i..=i + 1]);
-        sum = sum + u16::from_be_bytes(bytes) as i32;
-
-        count = count - 2;
-        i = i + 2;
+        i += 1;
     }
-
-    // There may be a single byte left; it is paired with 0 (just add the byte)
-    if count != 0 {
-        sum = sum + data[data.len() - 1] as i32;
-    };
 
     sum
 }
@@ -384,6 +373,6 @@ mod test {
         sample_ipv4_header.checksum = checksum_pre;
         let checksum_post = calc_ip_checksum(&sample_ipv4_header.to_be_bytes());
 
-        assert!(checksum_post == checksum_pre)
+        assert!(checksum_post == 0)
     }
 }
