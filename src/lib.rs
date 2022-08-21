@@ -311,9 +311,12 @@ pub fn calc_ip_checksum_finalize(sum: u32) -> u16 {
     let mut sum = sum;
 
     // Fold 32-bit accumulator into 16 bits
-    while sum >> 16 != 0 {
-        sum = (sum & 0xffff) + (sum >> 16);
-    }
+    // The spec does this in a while-loop, but the maximum possible number of times
+    // needed to guarantee success is 2, so we do it 3 times here to provide both
+    // guaranteed correctness and deterministic operation.
+    sum = (sum & 0xffff).wrapping_add(sum >> 16);
+    sum = (sum & 0xffff).wrapping_add(sum >> 16);
+    sum = (sum & 0xffff).wrapping_add(sum >> 16);
 
     // Convert to u16 and take bitwise complement
     let checksum = !(sum as u16);
