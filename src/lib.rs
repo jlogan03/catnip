@@ -17,7 +17,7 @@
 //! let data: ByteArray<8> = ByteArray([0, 1, 2, 3, 4, 5, 6, 7]);
 //!
 //! // Build frame
-//! let frame = EthernetFrame::<IpV4Frame<UdpFrame<ByteArray<8>>>> {
+//! let mut frame = EthernetFrame::<IpV4Frame<UdpFrame<ByteArray<8>>>> {
 //!     header: EthernetHeader {
 //!         dst_macaddr: MacAddr::BROADCAST,
 //!         src_macaddr: MacAddr::new([0x02, 0xAF, 0xFF, 0x1A, 0xE5, 0x3C]),
@@ -48,6 +48,10 @@
 //!     },
 //!     checksum: 0_u32,
 //! };
+//! 
+//! // Calculate IP and UDP checksums
+//! frame.data.data.header.checksum = calc_udp_checksum(&frame.data);
+//! frame.data.header.checksum = calc_ip_checksum(&frame.data.header.to_be_bytes());
 //!
 //! // Reduce to bytes
 //! let bytes = frame.to_be_bytes();
