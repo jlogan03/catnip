@@ -1,6 +1,6 @@
 [package]
 name = "catnip"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 description = "Minimal UDP/IP ethernet stack for data acquisition on private networks"
 homepage = "https://github.com/jlogan03/catnip"
