@@ -55,6 +55,10 @@ let frame = EthernetFrame::<IpV4Frame<UdpFrame<ByteArray<8>>>> {
     checksum: 0_u32,
 };
 
+// Calculate IP and UDP checksums
+frame.data.data.header.checksum = calc_udp_checksum(&frame.data);
+frame.data.header.checksum = calc_ip_checksum(&frame.data.header.to_be_bytes());
+
 // Reduce to big-endian network bytes
 let bytes = frame.to_be_bytes();
 
@@ -68,6 +72,7 @@ assert_eq!(frame_parsed, frame);
 * IPV4
 * UDP
 * ARP
+* DHCP (INFORM only)
 
 # To-do
 * Add UDP psuedo-socket trait w/ arbitrary async send/receive functions
