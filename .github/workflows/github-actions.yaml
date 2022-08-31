@@ -24,6 +24,9 @@ jobs:
           # Run tests of all functionality except compatibility with panic-never and no-std
           cargo test --no-default-features -- --nocapture 
 
+          # Test docs
+          cargo test --doc
+
           # Check for panic branches and no-std compatibility by building for an anonymous platform
           cd ./test/test_no_std 
           cargo build --target thumbv7em-none-eabihf

@@ -20,6 +20,26 @@
 //! or to listen for conflicts and resolve them proactively, which is not necessarily the case.
 //! 
 //! In any case, most network stacks that we might interact with seem to refuse to function without it.
+//!
+//! ```rust
+//! use catnip::*;
+//! 
+//! let msg = ArpPayload::new(
+//!    MacAddr::new([1, 2, 3, 4, 5, 6]),
+//!    IpV4Addr::new([7, 8, 9, 10]),
+//!    MacAddr::new([11, 12, 13, 14, 15, 16]),
+//!    IpV4Addr::new([17, 18, 19, 20]),
+//!    ArpOperation::Request,
+//! );
+//! 
+//! // Serialize
+//! let bytes: [u8; ArpPayload::BYTE_LEN] = msg.to_be_bytes();
+//! 
+//! // Deserialize
+//! let msg_parsed = ArpPayload::read_bytes(&bytes);
+//!
+//! assert_eq!(msg, msg_parsed);
+//! ```
 
 use crate::*;
 
@@ -196,28 +216,5 @@ impl ProtocolType {
     /// Pack into big-endian (network) byte array
     pub fn to_be_bytes(&self) -> [u8; Self::BYTE_LEN] {
         (*self as u16).to_be_bytes()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    /// Build an ARP message and make sure the parser returns the same values from the input
-    #[test]
-    fn test_serialization_loop() -> () {
-        let msg = ArpPayload::new(
-            MacAddr::new([7_u8; 6]),
-            IpV4Addr::new([8_u8; 4]),
-            MacAddr::new([9_u8; 6]),
-            IpV4Addr::new([10_u8; 4]),
-            ArpOperation::Request,
-        );
-        // Serialize
-        let bytes: [u8; ArpPayload::BYTE_LEN] = msg.to_be_bytes();
-        // Deserialize
-        let msg_parsed = ArpPayload::read_bytes(&bytes);
-
-        assert_eq!(msg, msg_parsed);
     }
 }

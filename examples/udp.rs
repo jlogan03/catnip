@@ -49,3 +49,8 @@ fn main() -> () {
 
     assert_eq!(frame_parsed, frame);
 }
+
+#[test]
+fn test_packet() -> () {
+    main();
+}

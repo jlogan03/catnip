@@ -1,6 +1,6 @@
 [package]
 name = "catnip"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 description = "Minimal UDP/IP ethernet stack for data acquisition on private networks"
 homepage = "https://github.com/jlogan03/catnip"
@@ -21,3 +21,15 @@ panic-never = { version = "0.1.0", optional = true }
 default = ["no_std"]           # Just for clarity; in fact, we are always no-std and panic-never compatible
 panic_never = ["panic-never"]  # Bring in the actual panic-never panic handler
 no_std = []
+
+[[example]]
+name = "udp"
+test = true
+
+[[example]]
+name = "arp"
+test = true
+
+[[example]]
+name = "dhcp"
+test = true
