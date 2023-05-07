@@ -1,6 +1,6 @@
 # catnip
 A no-std, panic-never, heapless, minimally-featured UDP/IP stack for bare-metal.
-Intended for fixed-time data acquisition and controls on LAN. 
+Intended for realtime data acquisition and controls on LAN. 
 
 Makes use of const generic expressions to provide flexibility in, 
 and guaranteed correctness of, lengths of headers and data segments without
