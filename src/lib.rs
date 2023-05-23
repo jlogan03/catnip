@@ -48,7 +48,7 @@
 //!     },
 //!     checksum: 0_u32,
 //! };
-//! 
+//!
 //! // Calculate IP and UDP checksums
 //! frame.data.data.header.checksum = calc_udp_checksum(&frame.data);
 //! frame.data.header.checksum = calc_ip_checksum(&frame.data.header.to_be_bytes());
@@ -65,7 +65,6 @@
 #![allow(dead_code)]
 #![deny(missing_docs)]
 #![feature(generic_const_exprs)]
-#![feature(test)]
 
 #[cfg(feature = "panic_never")]
 use panic_never as _;
@@ -330,7 +329,7 @@ pub fn calc_ip_checksum_finalize(sum: u32) -> u16 {
 
 /// Calculate an IP checksum on incomplete data
 /// returning the unfolded accumulator as [i32]
-/// 
+///
 /// This is a slowish method by about a factor of 2-4.
 /// It would be faster to case pairs of bytes to u16,
 /// but this method avoids generating panic branches in slice operations.

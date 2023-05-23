@@ -1,7 +1,7 @@
 //! Transport layer: User Datagram Protocol
 
 use crate::ip::{IpV4Frame, IpV4Header};
-use crate::{calc_ip_checksum_finalize, calc_ip_checksum_incomplete, ByteArray};
+use crate::{calc_ip_checksum_finalize, calc_ip_checksum_incomplete};
 use byte_struct::*;
 pub use ufmt::derive::uDebug;
 
