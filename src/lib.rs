@@ -65,7 +65,6 @@
 #![allow(dead_code)]
 #![deny(missing_docs)]
 #![feature(generic_const_exprs)]
-// #![feature(test)]
 
 #[cfg(feature = "panic_never")]
 use panic_never as _;
